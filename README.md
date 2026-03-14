@@ -13,6 +13,8 @@ or any other luarock you'll want to use.
 
 ## Install
 
+Use in an existing project:
+
 ```bash
 npm install hyperstache
 ```
