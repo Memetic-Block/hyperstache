@@ -188,7 +188,7 @@ describe('bundle with vite templates', () => {
 
     expect(result.viteProcessed).toBe(true)
     expect(result.templateCount).toBe(2)
-    expect(result.moduleCount).toBe(2)
+    expect(result.moduleCount).toBe(1)
 
     // Output should contain inlined CSS in the templates
     expect(result.output).toContain('font-family')

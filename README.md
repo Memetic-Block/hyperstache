@@ -25,6 +25,44 @@ luarocks make --only-deps --tree lua_modules <generated.rockspec>
 
 ## Quick Start
 
+Scaffold a new project:
+
+```bash
+npx hyperstache create my-app
+cd my-app
+npm install
+```
+
+Or choose a template:
+
+```bash
+# Vite for CSS/JS processing
+npx hyperstache create my-app --template vite
+
+# Vite + TypeScript
+npx hyperstache create my-app --template typescript
+
+# Vite + TailwindCSS v4
+npx hyperstache create my-app --template tailwind
+```
+
+| Template     | Includes                                                     |
+|--------------|--------------------------------------------------------------|
+| `basic`      | Lua process, Mustache templates, luarocks config             |
+| `vite`       | Basic + Vite template processing, CSS                        |
+| `typescript` | Vite + TypeScript, tsconfig.json                             |
+| `tailwind`   | Vite + TailwindCSS v4 with `@tailwindcss/vite`              |
+
+Then install luarocks dependencies and build:
+
+```bash
+npx hyperstache rockspec
+luarocks make --only-deps --tree lua_modules *.rockspec
+npx hyperstache build
+```
+
+### Manual Setup
+
 Create a config file in your project root:
 
 ```ts
@@ -191,6 +229,9 @@ and made available via `require('templates')` as a table keyed by relative path.
 ## CLI
 
 ```bash
+# Create a new project
+hyperstache create [name] [--template basic|vite|typescript|tailwind]
+
 # Bundle the Lua process
 hyperstache build
 
@@ -203,6 +244,7 @@ hyperstache rockspec
 
 | Command    | Description                                                      |
 |------------|------------------------------------------------------------------|
+| `create`   | Scaffold a new hyperstache project from a template               |
 | `build`    | Resolve Lua modules, inline templates, emit single `.lua` bundle |
 | `dev`      | Start Vite dev server with the hyperstache plugin                |
 | `rockspec` | Generate a `.rockspec` file from luarocks config                 |

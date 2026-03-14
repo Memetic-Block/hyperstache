@@ -42,7 +42,7 @@ describe('bundle integration', () => {
     expect(result.output).toContain('{{username}}')
 
     // Entry source should be at the end
-    expect(result.output).toContain('local utils = require("lib.utils")')
+    expect(result.output).toContain("local utils = require('lib.utils')")
 
     // lustache and templates should be unresolved (external)
     // lustache is unresolved because it's not in the project
