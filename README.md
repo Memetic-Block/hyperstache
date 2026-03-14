@@ -15,13 +15,7 @@ or any other luarock you'll want to use.
 
 ```bash
 npm install hyperstache
-
-# Add any luarock dependencies (or none) and then run:
-npx hyperstache rockspec
-luarocks make --only-deps --tree lua_modules <generated.rockspec>
 ```
-
-!!! Important: You *must* generate a rockspec & install its dependencies in order to use `lustache` in your AO process!
 
 ## Quick Start
 
