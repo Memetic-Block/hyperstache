@@ -94,7 +94,7 @@ Send({
 
 Or Dynamic Read module:
 ```lua
--- src/dynamid_read.lua
+-- src/dynamic_read.lua
 local templates = require('templates')
 local lustache = require('lustache')
 

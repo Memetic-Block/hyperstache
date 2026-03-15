@@ -4,7 +4,7 @@ import type { HyperstacheConfig, ResolvedConfig } from './config.js'
 import { bundle, bundleProcess } from './bundler/index.js'
 import type { BundleResult } from './bundler/index.js'
 
-export interface HyperstachePluginOptions extends HyperstacheConfig {
+export type HyperstachePluginOptions = (HyperstacheConfig | ResolvedConfig) & {
   /** Only bundle a specific process by name */
   filterProcess?: string
 }
@@ -55,7 +55,11 @@ export function hyperstache(options?: HyperstachePluginOptions): Plugin {
       if (options) {
         filterProcess = options.filterProcess
         const { filterProcess: _, ...configOptions } = options
-        hsConfig = await resolveConfig(configOptions as HyperstacheConfig, root)
+        if (Array.isArray((configOptions as ResolvedConfig).processes)) {
+          hsConfig = configOptions as ResolvedConfig
+        } else {
+          hsConfig = await resolveConfig(configOptions as HyperstacheConfig, root)
+        }
       } else {
         hsConfig = await loadConfig(root)
       }

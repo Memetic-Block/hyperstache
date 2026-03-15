@@ -219,6 +219,19 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
         bundle: true,
         write: true,
         packages: 'external',
+        plugins: [{
+          name: 'hyperstache-config-shim',
+          setup(b) {
+            b.onResolve({ filter: /^hyperstache$/ }, () => ({
+              path: 'hyperstache',
+              namespace: 'hyperstache-shim',
+            }))
+            b.onLoad({ filter: /.*/, namespace: 'hyperstache-shim' }, () => ({
+              contents: 'export function defineConfig(config) { return config }',
+              loader: 'js',
+            }))
+          },
+        }],
       })
       const mod = await import(pathToFileURL(outfile).href)
       config = mod.default ?? mod
