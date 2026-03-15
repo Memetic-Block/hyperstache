@@ -37,11 +37,15 @@ program
         process.exit(1)
       }
       const { bundleProcess } = await import('./bundler/index.js')
-      const result = await bundleProcess(proc)
+      const result = await bundleProcess(proc, config.aos)
       const viteNote = result.viteProcessed ? ' (Vite processed)' : ''
       const runtimeNote = result.runtimeIncluded ? ' +runtime' : ''
-      console.log(`[${result.processName}] Bundled ${result.moduleCount} modules, ${result.templateCount} templates${viteNote}${runtimeNote}`)
+      const aosNote = result.aosModule ? ' +aos module' : ''
+      console.log(`[${result.processName}] Bundled ${result.moduleCount} modules, ${result.templateCount} templates${viteNote}${runtimeNote}${aosNote}`)
       console.log(`[${result.processName}] Output: ${result.outPath}`)
+      if (result.aosCopiedFiles.length > 0) {
+        console.log(`[${result.processName}] aos files: ${result.aosCopiedFiles.join(', ')}`)
+      }
       if (result.unresolved.length > 0) {
         console.warn(`[${result.processName}] Unresolved modules: ${result.unresolved.join(', ')}`)
       }
@@ -50,8 +54,12 @@ program
       for (const result of results) {
         const viteNote = result.viteProcessed ? ' (Vite processed)' : ''
         const runtimeNote = result.runtimeIncluded ? ' +runtime' : ''
-        console.log(`[${result.processName}] Bundled ${result.moduleCount} modules, ${result.templateCount} templates${viteNote}${runtimeNote}`)
+        const aosNote = result.aosModule ? ' +aos module' : ''
+        console.log(`[${result.processName}] Bundled ${result.moduleCount} modules, ${result.templateCount} templates${viteNote}${runtimeNote}${aosNote}`)
         console.log(`[${result.processName}] Output: ${result.outPath}`)
+        if (result.aosCopiedFiles.length > 0) {
+          console.log(`[${result.processName}] aos files: ${result.aosCopiedFiles.join(', ')}`)
+        }
         if (result.unresolved.length > 0) {
           console.warn(`[${result.processName}] Unresolved modules: ${result.unresolved.join(', ')}`)
         }

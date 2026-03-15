@@ -35,6 +35,11 @@ export interface RuntimeConfig {
   handlers?: boolean
 }
 
+export interface AosConfig {
+  /** Git commit hash of the permaweb/aos repo to clone */
+  commit: string
+}
+
 export interface ProcessConfig {
   /** Lua entry point, e.g. "src/process.lua" */
   entry: string
@@ -59,6 +64,8 @@ export interface HyperstacheConfig {
   luarocks?: LuarocksConfig
   /** Shared runtime module defaults for all processes */
   runtime?: boolean | RuntimeConfig
+  /** Build as an aos module — clones the aos repo at the given commit and outputs the user's bundle as a require()'d module */
+  aos?: AosConfig
 }
 
 export interface ResolvedProcessConfig {
@@ -94,6 +101,10 @@ export interface ResolvedConfig {
   luarocks: {
     dependencies: Record<string, string>
     luaVersion: string
+  }
+  aos: {
+    enabled: boolean
+    commit: string
   }
 }
 
@@ -161,6 +172,17 @@ export async function resolveConfig(
     throw new Error('At least one process must be defined in "processes".')
   }
 
+  // Validate aos config
+  const aos: ResolvedConfig['aos'] = raw.aos
+    ? { enabled: true, commit: raw.aos.commit }
+    : { enabled: false, commit: '' }
+
+  if (aos.enabled && !/^[0-9a-f]{7,40}$/i.test(aos.commit)) {
+    throw new Error(
+      `Invalid aos commit hash "${aos.commit}". Expected a 7-40 character hex string.`,
+    )
+  }
+
   const outDir = resolve(root, raw.outDir ?? 'dist')
 
   const processes: ResolvedProcessConfig[] = await Promise.all(
@@ -214,6 +236,7 @@ export async function resolveConfig(
       dependencies: allDeps,
       luaVersion: processes[0].luarocks.luaVersion,
     },
+    aos,
   }
 }
 

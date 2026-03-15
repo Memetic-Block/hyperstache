@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emitBundle } from '../src/bundler/emit.js'
+import { emitBundle, emitModule } from '../src/bundler/emit.js'
 import type { LuaModule } from '../src/bundler/resolver.js'
 
 describe('emitBundle', () => {
@@ -118,5 +118,76 @@ describe('emitBundle', () => {
     const entryIdx = output.indexOf('-- Entry point')
     const afterEntry = output.slice(entryIdx)
     expect(afterEntry).not.toContain('require("hyperstache")')
+  })
+})
+
+describe('emitModule', () => {
+  it('wraps the bundle in _init() and returns empty table', () => {
+    const modules: LuaModule[] = [
+      {
+        name: 'process',
+        path: '/fake/process.lua',
+        source: 'print("hello")',
+        dependencies: [],
+      },
+    ]
+
+    const output = emitModule(modules, null)
+
+    // Should wrap in _init function
+    expect(output).toContain('local function _init()')
+    expect(output).toContain('_init()')
+    expect(output).toContain('return {}')
+
+    // The bundle content should be indented inside _init
+    expect(output).toContain('  -- Bundled by hyperstache')
+    expect(output).toContain('  local _modules = {}')
+
+    // Entry source should still be present (inside _init)
+    expect(output).toContain('print("hello")')
+  })
+
+  it('wraps bundle with modules and templates as a module', () => {
+    const modules: LuaModule[] = [
+      {
+        name: 'lib.utils',
+        path: '/fake/lib/utils.lua',
+        source: 'local M = {}\nreturn M',
+        dependencies: [],
+      },
+      {
+        name: 'process',
+        path: '/fake/process.lua',
+        source: 'local u = require("lib.utils")',
+        dependencies: ['lib.utils'],
+      },
+    ]
+
+    const templatesLua = 'local _templates = {}\nreturn _templates'
+    const output = emitModule(modules, templatesLua)
+
+    expect(output).toContain('local function _init()')
+    expect(output).toContain('return {}')
+    // Inner content should be indented
+    expect(output).toContain('  _modules["lib.utils"]')
+    expect(output).toContain('  _modules["templates"]')
+  })
+
+  it('ends with _init() call and return {}', () => {
+    const modules: LuaModule[] = [
+      {
+        name: 'main',
+        path: '/fake/main.lua',
+        source: 'print("go")',
+        dependencies: [],
+      },
+    ]
+
+    const output = emitModule(modules, null)
+    const lines = output.split('\n')
+    // Last line should be return {}
+    expect(lines[lines.length - 1]).toBe('return {}')
+    // Second to last should be _init()
+    expect(lines[lines.length - 2]).toBe('_init()')
   })
 })

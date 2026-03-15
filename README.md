@@ -387,6 +387,65 @@ export default defineConfig({
 })
 ```
 
+## AOS Module Build
+
+By default, hyperstache outputs a single self-contained `process.lua`. If you want to build your process as a **module** for the [ao CLI](https://github.com/permaweb/aos) `build` command, add the `aos` option to your config:
+
+```ts
+import { defineConfig } from 'hyperstache'
+
+export default defineConfig({
+  processes: {
+    main: { entry: 'src/process.lua' },
+  },
+  aos: {
+    commit: 'ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9',
+  },
+  luarocks: {
+    dependencies: { lustache: '1.3.1-0' },
+  },
+})
+```
+
+When `aos` is set, the build changes:
+
+1. **Clones the aos repo** at the specified commit from `https://github.com/permaweb/aos`
+2. **Copies all `.lua` files** from the repo's `process/` directory into your output
+3. **Wraps your bundle as a module** — your bundled Lua is output as `{processName}.lua` instead of `process.lua`, wrapped so all side effects (handler registration, etc.) execute on `require()`
+4. **Injects `require("{processName}")`** into the copied `process.lua` after the last `Handlers.add`/`Handlers.append` call
+
+The result is a directory structure compatible with `ao cli build`:
+
+```
+dist/
+  main/
+    main.lua          ← your bundled code (as a module)
+    process.lua       ← from aos repo, with require("main") injected
+    handlers.lua      ← other aos process files
+    ...
+```
+
+With multiple processes, each gets its own subdirectory:
+
+```
+dist/
+  main/
+    main.lua
+    process.lua
+  worker/
+    worker.lua
+    process.lua
+```
+
+### Caching
+
+The cloned aos repo is cached at `node_modules/.cache/hyperstache/aos-{commit}` so subsequent builds don't re-clone. Delete this directory to force a fresh clone.
+
+### Requirements
+
+- **git** must be available on your PATH
+- The `commit` value must be a valid 7-40 character hex commit hash
+
 ## Project Structure
 
 ```
@@ -478,6 +537,11 @@ export default defineConfig({
 
   // Runtime template management module (default: disabled)
   runtime: true,               // or { handlers: true } to auto-register AO handlers
+
+  // Build as an aos module (default: disabled)
+  aos: {
+    commit: 'abc123...',       // Git commit hash of permaweb/aos repo
+  },
 })
 ```
 
@@ -548,6 +612,12 @@ interface HyperstacheConfig {
     /** Auto-register AO message handlers for template CRUD */
     handlers?: boolean
   }
+
+  /** Build as an aos module — clones the aos repo and outputs your bundle as a require()'d module */
+  aos?: {
+    /** Git commit hash of the permaweb/aos repo to clone */
+    commit: string
+  }
 }
 ```
 
@@ -558,6 +628,7 @@ interface HyperstacheConfig {
 3. **Render** *(optional)* — If `templates.vite` is enabled, processes `.html` templates through Vite: escapes Mustache syntax, runs Vite build to compile and inline CSS/JS assets, restores Mustache syntax
 4. **Emit** — Wraps each module in a function, generates a `require`-compatible loader, inlines templates as a virtual `require('templates')` module, optionally includes the `require('hyperstache')` runtime module, and appends the entry point source
 5. **Output** — Writes a single flat `.lua` file to `outDir/outFile`
+6. **AOS Module** *(optional)* — If `aos` is configured, wraps the bundle as a Lua module, clones the aos repo at the specified commit, copies its `process/` Lua files to the output directory, and injects `require("{processName}")` into the aos `process.lua`
 
 The output is self-contained and runs in AO's Lua runtime without external dependencies.
 

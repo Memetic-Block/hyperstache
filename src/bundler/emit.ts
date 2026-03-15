@@ -85,3 +85,29 @@ export function emitBundle(
 
   return lines.join('\n')
 }
+
+/**
+ * Emit a bundled Lua file wrapped as a module.
+ *
+ * The output is identical to `emitBundle` but wrapped so that all side effects
+ * (handler registration, etc.) execute when the module is `require()`'d,
+ * and an empty table is returned to satisfy the Lua module contract.
+ */
+export function emitModule(
+  modules: LuaModule[],
+  templatesLuaSource: string | null,
+  runtimeLuaSource?: string | null,
+  autoRequireRuntime?: boolean,
+): string {
+  const inner = emitBundle(modules, templatesLuaSource, runtimeLuaSource, autoRequireRuntime)
+  const lines: string[] = []
+  lines.push('local function _init()')
+  for (const line of inner.split('\n')) {
+    lines.push(`  ${line}`)
+  }
+  lines.push('end')
+  lines.push('')
+  lines.push('_init()')
+  lines.push('return {}')
+  return lines.join('\n')
+}

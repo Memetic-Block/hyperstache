@@ -3,11 +3,13 @@ import { resolve, dirname } from 'node:path'
 import type { ResolvedConfig, ResolvedProcessConfig } from '../config.js'
 import { resolveModules } from './resolver.js'
 import { collectTemplates } from './templates.js'
-import { emitBundle } from './emit.js'
+import { emitBundle, emitModule } from './emit.js'
 import { renderTemplates } from './vite-render.js'
 import { generateRuntimeSource } from './runtime.js'
+import { ensureAosRepo, copyAosProcessFiles, injectRequire } from './aos.js'
 
-export { resolveModules, collectTemplates, emitBundle, renderTemplates, generateRuntimeSource }
+export { resolveModules, collectTemplates, emitBundle, emitModule, renderTemplates, generateRuntimeSource }
+export { ensureAosRepo, copyAosProcessFiles, injectRequire } from './aos.js'
 export type { LuaModule, ResolveResult } from './resolver.js'
 export type { TemplateEntry } from './templates.js'
 export type { EscapeResult } from './vite-render.js'
@@ -29,12 +31,24 @@ export interface BundleResult {
   viteProcessed: boolean
   /** Whether the hyperstache runtime module is included */
   runtimeIncluded: boolean
+  /** Whether this was built as an aos module */
+  aosModule: boolean
+  /** Files copied from the aos repo (when aosModule is true) */
+  aosCopiedFiles: string[]
+}
+
+interface AosOpts {
+  enabled: boolean
+  commit: string
 }
 
 /**
  * Run the full bundling pipeline for a single process: resolve → collect templates → emit.
  */
-export async function bundleProcess(process: ResolvedProcessConfig): Promise<BundleResult> {
+export async function bundleProcess(
+  process: ResolvedProcessConfig,
+  aos: AosOpts = { enabled: false, commit: '' },
+): Promise<BundleResult> {
   // 1. Resolve Lua modules
   const { modules, unresolved } = await resolveModules(process)
 
@@ -68,12 +82,26 @@ export async function bundleProcess(process: ResolvedProcessConfig): Promise<Bun
   }
 
   // 5. Emit bundle
-  const output = emitBundle(modules, templatesSource, runtimeSource, process.runtime.handlers)
+  const output = aos.enabled
+    ? emitModule(modules, templatesSource, runtimeSource, process.runtime.handlers)
+    : emitBundle(modules, templatesSource, runtimeSource, process.runtime.handlers)
 
-  // 6. Write output
-  const outPath = resolve(process.outDir, process.outFile)
+  // 6. Determine output paths
+  // When aos is enabled with multiple processes, nest under processName subdir
+  const processOutDir = aos.enabled ? resolve(process.outDir, process.name) : process.outDir
+  const outFile = aos.enabled ? `${process.name}.lua` : process.outFile
+  const outPath = resolve(processOutDir, outFile)
   await mkdir(dirname(outPath), { recursive: true })
   await writeFile(outPath, output, 'utf-8')
+
+  // 7. Handle aos module output: clone repo, copy files, inject require
+  let aosCopiedFiles: string[] = []
+  if (aos.enabled) {
+    const repoPath = await ensureAosRepo(aos.commit, process.root)
+    aosCopiedFiles = await copyAosProcessFiles(repoPath, processOutDir)
+    const aosProcessLua = resolve(processOutDir, 'process.lua')
+    await injectRequire(aosProcessLua, process.name)
+  }
 
   return {
     processName: process.name,
@@ -84,6 +112,8 @@ export async function bundleProcess(process: ResolvedProcessConfig): Promise<Bun
     templateCount: entries.length,
     viteProcessed: viteEnabled && entries.length > 0,
     runtimeIncluded: process.runtime.enabled,
+    aosModule: aos.enabled,
+    aosCopiedFiles,
   }
 }
 
@@ -91,5 +121,5 @@ export async function bundleProcess(process: ResolvedProcessConfig): Promise<Bun
  * Run the full bundling pipeline for all processes in parallel.
  */
 export async function bundle(config: ResolvedConfig): Promise<BundleResult[]> {
-  return Promise.all(config.processes.map(bundleProcess))
+  return Promise.all(config.processes.map(p => bundleProcess(p, config.aos)))
 }
