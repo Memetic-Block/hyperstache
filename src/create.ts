@@ -24,6 +24,7 @@ function gitignore(): string {
 dist/
 lua_modules/
 *.rockspec
+.env
 `
 }
 
