@@ -31,7 +31,7 @@ lua_modules/
 function readme(name: string): string {
   return `# ${name}
 
-An [AO](https://ao.arweave.dev) Lua process built with [hyperstache](https://github.com/memetic-block/hyperstache).
+An [AO](https://ao.arweave.net) Lua process built with [hyperstache](https://github.com/memetic-block/hyperstache).
 
 ## Getting Started
 
@@ -155,7 +155,7 @@ h1 {
 function readmeVite(name: string): string {
   return `# ${name}
 
-An [AO](https://ao.arweave.dev) Lua process built with [hyperstache](https://github.com/memetic-block/hyperstache) and [Vite](https://vite.dev/).
+An [AO](https://ao.arweave.net) Lua process built with [hyperstache](https://github.com/memetic-block/hyperstache) and [Vite](https://vite.dev/).
 
 ## Getting Started
 
