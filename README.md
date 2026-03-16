@@ -9,6 +9,8 @@ Optionally, templates can be processed through Vite before bundling — CSS, Typ
 
 A single project can define multiple processes, each producing its own self-contained Lua bundle.
 
+Bundled artifacts may optionally be output as aos modules ready to be build into a self-contained artifact with the [ao dev cli](https://github.com/permaweb/ao).
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
