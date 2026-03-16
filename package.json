@@ -1,6 +1,6 @@
 {
-  "name": "hyperstache",
-  "version": "0.1.0",
+  "name": "@memetic-block/hyperstache",
+  "version": "0.0.1",
   "description": "Framework for bundling AO Lua processes with Mustache templating, Luarocks support, and Vite",
   "type": "module",
   "exports": {
