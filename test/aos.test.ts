@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { injectRequire, copyAosProcessFiles } from '../src/bundler/aos.js'
+import { injectRequire, copyAosProcessFiles, generateAosYaml, writeAosYaml } from '../src/bundler/aos.js'
 import { mkdir, writeFile, readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -162,5 +162,98 @@ describe('copyAosProcessFiles', () => {
     await writeFile(join(srcDir, 'process', 'notes.txt'), 'not lua', 'utf-8')
     const copied = await copyAosProcessFiles(srcDir, destDir)
     expect(copied).toEqual([])
+  })
+})
+
+describe('generateAosYaml', () => {
+  const defaultOpts = {
+    stack_size: 3_145_728,
+    initial_memory: 4_194_304,
+    maximum_memory: 1_073_741_824,
+    target: 32 as const,
+    aos_git_hash: '15dd81ee596518e2f44521e973b8ad1ce3ee9945',
+    compute_limit: '9000000000000',
+    module_format: 'wasm32-unknown-emscripten-metering',
+  }
+
+  it('generates valid YAML with all default fields', () => {
+    const yaml = generateAosYaml(defaultOpts)
+    expect(yaml).toContain('stack_size: 3145728')
+    expect(yaml).toContain('initial_memory: 4194304')
+    expect(yaml).toContain('maximum_memory: 1073741824')
+    expect(yaml).toContain('target: 32')
+    expect(yaml).toContain("aos_git_hash: '15dd81ee596518e2f44521e973b8ad1ce3ee9945'")
+    expect(yaml).toContain("compute_limit: '9000000000000'")
+    expect(yaml).toContain("module_format: 'wasm32-unknown-emscripten-metering'")
+  })
+
+  it('respects custom values', () => {
+    const yaml = generateAosYaml({
+      stack_size: 6_291_456,
+      initial_memory: 8_388_608,
+      maximum_memory: 2_147_483_648,
+      target: 64,
+      aos_git_hash: 'abc1234',
+      compute_limit: '5000000000000',
+      module_format: 'wasm64-unknown-emscripten-metering',
+    })
+    expect(yaml).toContain('stack_size: 6291456')
+    expect(yaml).toContain('initial_memory: 8388608')
+    expect(yaml).toContain('maximum_memory: 2147483648')
+    expect(yaml).toContain('target: 64')
+    expect(yaml).toContain("aos_git_hash: 'abc1234'")
+    expect(yaml).toContain("compute_limit: '5000000000000'")
+    expect(yaml).toContain("module_format: 'wasm64-unknown-emscripten-metering'")
+  })
+
+  it('ends with a newline', () => {
+    const yaml = generateAosYaml(defaultOpts)
+    expect(yaml.endsWith('\n')).toBe(true)
+  })
+})
+
+describe('writeAosYaml', () => {
+  let dir: string
+
+  beforeEach(async () => {
+    dir = join(tmpdir(), `hyperstache-yaml-test-${Date.now()}`)
+    await mkdir(dir, { recursive: true })
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('writes config.yml to the output directory', async () => {
+    const yamlPath = await writeAosYaml(dir, {
+      stack_size: 3_145_728,
+      initial_memory: 4_194_304,
+      maximum_memory: 1_073_741_824,
+      target: 32,
+      aos_git_hash: 'deadbeef',
+      compute_limit: '9000000000000',
+      module_format: 'wasm32-unknown-emscripten-metering',
+    })
+
+    expect(yamlPath).toBe(join(dir, 'config.yml'))
+    const content = await readFile(yamlPath, 'utf-8')
+    expect(content).toContain('stack_size: 3145728')
+    expect(content).toContain("aos_git_hash: 'deadbeef'")
+  })
+
+  it('creates output directory if it does not exist', async () => {
+    const nested = join(dir, 'sub', 'dir')
+    const yamlPath = await writeAosYaml(nested, {
+      stackSize: 3_145_728,
+      initialMemory: 4_194_304,
+      maximumMemory: 1_073_741_824,
+      target: 32,
+      aos_git_hash: 'cafebabe',
+      compute_limit: '9000000000000',
+      module_format: 'wasm32-unknown-emscripten-metering',
+    })
+
+    const content = await readFile(yamlPath, 'utf-8')
+    expect(content).toContain("aos_git_hash: 'cafebabe'")
   })
 })

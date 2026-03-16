@@ -6,10 +6,11 @@ import { collectTemplates } from './templates.js'
 import { emitBundle, emitModule } from './emit.js'
 import { renderTemplates } from './vite-render.js'
 import { generateRuntimeSource } from './runtime.js'
-import { ensureAosRepo, copyAosProcessFiles, injectRequire } from './aos.js'
+import { ensureAosRepo, copyAosProcessFiles, injectRequire, writeAosYaml } from './aos.js'
 
 export { resolveModules, collectTemplates, emitBundle, emitModule, renderTemplates, generateRuntimeSource }
-export { ensureAosRepo, copyAosProcessFiles, injectRequire } from './aos.js'
+export { ensureAosRepo, copyAosProcessFiles, injectRequire, generateAosYaml, writeAosYaml } from './aos.js'
+export type { AosYamlOptions } from './aos.js'
 export type { LuaModule, ResolveResult } from './resolver.js'
 export type { TemplateEntry } from './templates.js'
 export type { EscapeResult } from './vite-render.js'
@@ -37,11 +38,19 @@ export interface BundleResult {
   aosModule: boolean
   /** Files copied from the aos repo (when aosModule is true) */
   aosCopiedFiles: string[]
+  /** Path to the generated YAML config file (when aosModule is true) */
+  aosYamlPath: string | null
 }
 
 interface AosOpts {
   enabled: boolean
   commit: string
+  stack_size: number
+  initial_memory: number
+  maximum_memory: number
+  target: 32 | 64
+  compute_limit: string
+  module_format: string
 }
 
 /**
@@ -49,7 +58,7 @@ interface AosOpts {
  */
 export async function bundleProcess(
   process: ResolvedProcessConfig,
-  aos: AosOpts = { enabled: false, commit: '' },
+  aos: AosOpts = { enabled: false, commit: '', stack_size: 3_145_728, initial_memory: 4_194_304, maximum_memory: 1_073_741_824, target: 32, compute_limit: '9000000000000', module_format: 'wasm32-unknown-emscripten-metering' },
 ): Promise<BundleResult> {
   // 1. Resolve Lua modules
   const { modules, unresolved } = await resolveModules(process)
@@ -99,13 +108,23 @@ export async function bundleProcess(
   await mkdir(dirname(outPath), { recursive: true })
   await writeFile(outPath, output, 'utf-8')
 
-  // 7. Handle aos module output: clone repo, copy files, inject require (processes only)
+  // 7. Handle aos module output: clone repo, copy files, inject require, write YAML (processes only)
   let aosCopiedFiles: string[] = []
+  let aosYamlPath: string | null = null
   if (useAos) {
     const repoPath = await ensureAosRepo(aos.commit, process.root)
     aosCopiedFiles = await copyAosProcessFiles(repoPath, processOutDir)
     const aosProcessLua = resolve(processOutDir, 'process.lua')
     await injectRequire(aosProcessLua, process.name)
+    aosYamlPath = await writeAosYaml(processOutDir, {
+      stack_size: aos.stack_size,
+      initial_memory: aos.initial_memory,
+      maximum_memory: aos.maximum_memory,
+      target: aos.target,
+      aos_git_hash: aos.commit,
+      compute_limit: aos.compute_limit,
+      module_format: aos.module_format,
+    })
   }
 
   return {
@@ -120,6 +139,7 @@ export async function bundleProcess(
     runtimeIncluded: process.runtime.enabled,
     aosModule: useAos,
     aosCopiedFiles,
+    aosYamlPath,
   }
 }
 

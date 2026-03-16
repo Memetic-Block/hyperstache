@@ -129,3 +129,41 @@ export async function injectRequire(processLuaPath: string, moduleName: string):
 
   await writeFile(processLuaPath, lines.join('\n'), 'utf-8')
 }
+
+export interface AosYamlOptions {
+  stack_size: number
+  initial_memory: number
+  maximum_memory: number
+  target: 32 | 64
+  aos_git_hash: string
+  compute_limit: string
+  module_format: string
+}
+
+/**
+ * Generate YAML content for ao-dev-cli configuration.
+ */
+export function generateAosYaml(opts: AosYamlOptions): string {
+  const lines: string[] = []
+  lines.push('# ao-dev-cli options')
+  lines.push(`stack_size: ${opts.stack_size}`)
+  lines.push(`initial_memory: ${opts.initial_memory}`)
+  lines.push(`maximum_memory: ${opts.maximum_memory}`)
+  lines.push(`target: ${opts.target}`)
+  lines.push('# extra info')
+  lines.push(`aos_git_hash: '${opts.aos_git_hash}'`)
+  lines.push(`compute_limit: '${opts.compute_limit}'`)
+  lines.push(`module_format: '${opts.module_format}'`)
+  return lines.join('\n') + '\n'
+}
+
+/**
+ * Write the ao-dev-cli YAML configuration file to `outDir/config.yml`.
+ */
+export async function writeAosYaml(outDir: string, opts: AosYamlOptions): Promise<string> {
+  const yamlContent = generateAosYaml(opts)
+  const yamlPath = join(outDir, 'config.yml')
+  await mkdir(outDir, { recursive: true })
+  await writeFile(yamlPath, yamlContent, 'utf-8')
+  return yamlPath
+}

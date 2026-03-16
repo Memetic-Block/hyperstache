@@ -439,6 +439,7 @@ When `aos` is set, the build changes for `type: 'process'` entries (the default)
 2. **Copies all `.lua` files** from the repo's `process/` directory into your output
 3. **Wraps your bundle as a module** — your bundled Lua is output as `{processName}.lua` instead of `process.lua`, wrapped so all side effects (handler registration, etc.) execute on `require()`
 4. **Injects `require("{processName}")`** into the copied `process.lua` after the last `Handlers.add`/`Handlers.append` call
+5. **Generates a `config.yml`** with ao-dev-cli options (memory settings, WASM target, compute limit, module format)
 
 Entries with `type: 'module'` are **not affected** by the `aos` option — they always produce a raw bundle output without any AOS integration.
 
@@ -449,6 +450,7 @@ dist/
   main/
     main.lua          ← your bundled code (as a module)
     process.lua       ← from aos repo, with require("main") injected
+    config.yml        ← ao-dev-cli configuration
     handlers.lua      ← other aos process files
     ...
 ```
@@ -460,9 +462,46 @@ dist/
   main/
     main.lua
     process.lua
+    config.yml
   worker/
     worker.lua
     process.lua
+    config.yml
+```
+
+### AOS Build Options
+
+Customize memory, WASM target, and other ao-dev-cli settings:
+
+```ts
+export default defineConfig({
+  processes: {
+    main: { entry: 'src/process.lua' },
+  },
+  aos: {
+    commit: 'ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9',
+    stack_size: 3_145_728,        // 3MiB (default)
+    initial_memory: 4_194_304,    // 4MiB — includes stack + heap (default)
+    maximum_memory: 1_073_741_824, // 1GiB (default)
+    target: 32,                    // wasm32 (default) or 64 for wasm64
+    compute_limit: '9000000000000', // publishing compute limit (default)
+    module_format: 'wasm32-unknown-emscripten-metering', // auto-derived from target
+  },
+})
+```
+
+The generated `config.yml`:
+
+```yml
+# ao-dev-cli options
+stack_size: 3145728
+initial_memory: 4194304
+maximum_memory: 1073741824
+target: 32
+# extra info
+aos_git_hash: 'ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9'
+compute_limit: '9000000000000'
+module_format: 'wasm32-unknown-emscripten-metering'
 ```
 
 ### Caching
@@ -570,6 +609,12 @@ export default defineConfig({
   // Build as an aos module (default: disabled)
   aos: {
     commit: 'abc123...',       // Git commit hash of permaweb/aos repo
+    stack_size: 3_145_728,     // Stack size in bytes (default: 3MiB)
+    initial_memory: 4_194_304, // Initial memory in bytes (default: 4MiB)
+    maximum_memory: 1_073_741_824, // Max memory in bytes (default: 1GiB)
+    target: 32,                // wasm32 (default) or 64 for wasm64
+    compute_limit: '9000000000000', // Compute limit for publishing
+    module_format: 'wasm32-unknown-emscripten-metering', // Auto-derived from target
   },
 })
 ```
@@ -649,6 +694,18 @@ interface HyperstacheConfig {
   aos?: {
     /** Git commit hash of the permaweb/aos repo to clone */
     commit: string
+    /** Stack size in bytes (default: 3145728 = 3MiB) */
+    stack_size?: number
+    /** Initial memory in bytes — includes stack + heap (default: 4194304 = 4MiB) */
+    initial_memory?: number
+    /** Maximum memory in bytes (default: 1073741824 = 1GiB) */
+    maximum_memory?: number
+    /** WASM target: 32 or 64 (default: 32) */
+    target?: 32 | 64
+    /** Compute limit for publishing (default: '9000000000000') */
+    compute_limit?: string
+    /** Module format (default: derived from target, e.g. 'wasm32-unknown-emscripten-metering') */
+    module_format?: string
   }
 }
 ```
@@ -660,7 +717,7 @@ interface HyperstacheConfig {
 3. **Render** *(optional)* — If `templates.vite` is enabled, processes `.html` templates through Vite: escapes Mustache syntax, runs Vite build to compile and inline CSS/JS assets, restores Mustache syntax
 4. **Emit** — Wraps each module in a function, generates a `require`-compatible loader, inlines templates as a virtual `require('templates')` module, optionally includes the `require('hyperstache')` runtime module, and appends the entry point source
 5. **Output** — Writes a single flat `.lua` file to `outDir/outFile`
-6. **AOS Module** *(optional)* — If `aos` is configured, wraps the bundle as a Lua module, clones the aos repo at the specified commit, copies its `process/` Lua files to the output directory, and injects `require("{processName}")` into the aos `process.lua`
+6. **AOS Module** *(optional)* — If `aos` is configured, wraps the bundle as a Lua module, clones the aos repo at the specified commit, copies its `process/` Lua files to the output directory, injects `require("{processName}")` into the aos `process.lua`, and generates a `config.yml` with ao-dev-cli build options
 
 The output is self-contained and runs in AO's Lua runtime without external dependencies.
 

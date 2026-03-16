@@ -38,6 +38,18 @@ export interface RuntimeConfig {
 export interface AosConfig {
   /** Git commit hash of the permaweb/aos repo to clone */
   commit: string
+  /** Stack size in bytes (default: 3145728 = 3MiB) */
+  stack_size?: number
+  /** Initial memory in bytes — includes stack + heap (default: 4194304 = 4MiB) */
+  initial_memory?: number
+  /** Maximum memory in bytes (default: 1073741824 = 1GiB) */
+  maximum_memory?: number
+  /** WASM target: 32 or 64 (default: 32) */
+  target?: 32 | 64
+  /** Compute limit for publishing (default: '9000000000000') */
+  compute_limit?: string
+  /** Module format (default: derived from target, e.g. 'wasm32-unknown-emscripten-metering') */
+  module_format?: string
 }
 
 export interface ProcessConfig {
@@ -109,6 +121,12 @@ export interface ResolvedConfig {
   aos: {
     enabled: boolean
     commit: string
+    stack_size: number
+    initial_memory: number
+    maximum_memory: number
+    target: 32 | 64
+    compute_limit: string
+    module_format: string
   }
 }
 
@@ -177,9 +195,28 @@ export async function resolveConfig(
   }
 
   // Validate aos config
+  const aosTarget = raw.aos?.target ?? 32
   const aos: ResolvedConfig['aos'] = raw.aos
-    ? { enabled: true, commit: raw.aos.commit }
-    : { enabled: false, commit: '' }
+    ? {
+        enabled: true,
+        commit: raw.aos.commit,
+        stack_size: raw.aos.stack_size ?? 3_145_728,
+        initial_memory: raw.aos.initial_memory ?? 4_194_304,
+        maximum_memory: raw.aos.maximum_memory ?? 1_073_741_824,
+        target: aosTarget,
+        compute_limit: raw.aos.compute_limit ?? '9000000000000',
+        module_format: raw.aos.module_format ?? `wasm${aosTarget}-unknown-emscripten-metering`,
+      }
+    : {
+        enabled: false,
+        commit: '',
+        stack_size: 3_145_728,
+        initial_memory: 4_194_304,
+        maximum_memory: 1_073_741_824,
+        target: 32 as const,
+        compute_limit: '9000000000000',
+        module_format: 'wasm32-unknown-emscripten-metering',
+      }
 
   if (aos.enabled && !/^[0-9a-f]{7,40}$/i.test(aos.commit)) {
     throw new Error(
