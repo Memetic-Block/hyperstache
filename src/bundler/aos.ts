@@ -117,7 +117,7 @@ export async function injectRequire(processLuaPath: string, moduleName: string):
     }
   }
 
-  const requireLine = `require("${moduleName}")`
+  const requireLine = `require(".${moduleName}")`
 
   if (lastHandlerEnd >= 0) {
     // Insert after the last handler call
