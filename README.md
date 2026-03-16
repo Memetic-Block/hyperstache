@@ -24,6 +24,8 @@ Bundled artifacts may optionally be output as aos modules ready to be build into
 - [Vite Template Processing](#vite-template-processing)
   - [Advanced Vite Options](#advanced-vite-options)
   - [External Dependencies](#external-dependencies)
+    - [Import Maps for External JS](#import-maps-for-external-js)
+  - [ESM Mode](#esm-mode)
 - [Runtime Template Management](#runtime-template-management)
   - [AO Message Handlers](#ao-message-handlers)
   - [Per-Process Runtime Override](#per-process-runtime-override)
@@ -373,7 +375,112 @@ export default defineConfig({
 
 The `external` array accepts strings and regular expressions, matching [Rollup's external option](https://rollupjs.org/configuration-options/#external). Matched imports are preserved as-is in the HTML output instead of being compiled and inlined.
 
+#### Import Maps for External JS
+
+For external JavaScript modules that your frontend code loads via dynamic `import()`, you can specify a URL alongside each external. Hyperstache will inject a [`<script type="importmap">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap) into each HTML template's `<head>` so the browser can resolve bare import specifiers at runtime:
+
+```ts
+import { defineConfig } from 'hyperstache'
+
+export default defineConfig({
+  processes: {
+    main: { entry: 'src/process.lua' },
+  },
+  templates: {
+    vite: {
+      external: [
+        { name: 'htmx', url: 'https://cdn.example.com/htmx.esm.js' },
+        { name: 'alpine', url: 'ar://abc123txid' },
+        './styles.css',  // plain externals still work as before
+      ],
+    },
+  },
+  luarocks: {
+    dependencies: { lustache: '1.3.1-0' },
+  },
+})
+```
+
+This produces the following in each HTML `<head>`:
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "htmx": "https://cdn.example.com/htmx.esm.js",
+    "alpine": "/abc123txid"
+  }
+}
+</script>
+```
+
+Your inlined frontend code can then use standard dynamic imports:
+
+```ts
+const htmx = await import('htmx')
+const alpine = await import('alpine')
+```
+
+**Arweave wayfinder URLs** (`ar://<txid>`) are resolved to relative paths (`/<txid>`). When the HTML is served from a HyperBEAM node, the browser resolves these against the node's origin, allowing the node to proxy the Arweave content transparently.
+
+| Entry format | Rollup external | Import map entry |
+|---|---|---|
+| `'lodash'` | Yes | No |
+| `/^@scope\//` | Yes | No |
+| `{ name: 'htmx', url: 'https://...' }` | Yes | `"htmx": "https://..."` |
+| `{ name: 'lib', url: 'ar://txid' }` | Yes | `"lib": "/txid"` |
+
 Configured externals are reported in the `BundleResult.viteExternals` array for programmatic consumers.
+
+### ESM Mode
+
+When developing with ESM `<script type="module">` entry points in your HTML templates, enable `esm: true` to preserve module semantics through inlining:
+
+```ts
+import { defineConfig } from 'hyperstache'
+
+export default defineConfig({
+  processes: {
+    main: { entry: 'src/process.lua' },
+  },
+  templates: {
+    vite: { esm: true },
+  },
+  luarocks: {
+    dependencies: { lustache: '1.3.1-0' },
+  },
+})
+```
+
+With ESM mode enabled, you can author templates like this:
+
+```html
+<!-- src/templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head><title>{{title}}</title></head>
+<body>
+  <script crossorigin type="module">globalThis.process={browser:!0,env:{}}</script>
+  <script crossorigin type="module" src="./app.ts"></script>
+</body>
+</html>
+```
+
+After building, the output preserves both scripts — existing inline scripts are kept verbatim while `src` scripts are transpiled and inlined:
+
+```html
+<body>
+  <script crossorigin type="module">globalThis.process={browser:!0,env:{}}</script>
+  <script crossorigin type="module">/* transpiled app.ts code */</script>
+</body>
+```
+
+Specifically, `esm: true` does two things:
+
+1. **Preserves `type="module"`** on inlined `<script src="...">` tags (by default it is stripped since inlined code runs as a classic script)
+2. **Protects pre-existing inline scripts** — `<script>` tags that already contain code (no `src` attribute) are passed through untouched, preventing Vite from transforming them
+
+Without `esm`, the default behavior is unchanged: `type="module"` is stripped from inlined scripts and Vite processes all script blocks normally.
 
 ## Runtime Template Management
 
@@ -676,7 +783,7 @@ export default defineConfig({
   templates: {
     extensions: ['.html', '.htm', '.tmpl', '.mustache', '.mst', '.mu', '.stache'],
     dir: 'src/templates',           // Auto-detected from entry dir by default
-    vite: true,                     // or { plugins, css, resolve, define, external }
+    vite: true,                     // or { plugins, css, resolve, define, external, esm }
   },
 
   // Shared luarocks defaults
@@ -757,8 +864,11 @@ interface HyperstacheConfig {
       css?: ViteCSSOptions
       resolve?: ViteResolveOptions
       define?: Record<string, string>
-      /** Dependencies to treat as external (not bundled/inlined by Rollup) */
-      external?: (string | RegExp)[]
+      /** Dependencies to treat as external (not bundled/inlined by Rollup).
+       *  Use { name, url } objects to also inject a <script type="importmap">. */
+      external?: (string | RegExp | { name: string; url: string })[]
+      /** Preserve type="module" on inlined scripts and protect pre-existing inline scripts from Vite */
+      esm?: boolean
     }
   }
 

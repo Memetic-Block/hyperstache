@@ -9,11 +9,12 @@ import { generateRuntimeSource } from './runtime.js'
 import { ensureAosRepo, copyAosProcessFiles, injectRequire, stripRequires, writeAosYaml } from './aos.js'
 
 export { resolveModules, collectTemplates, emitBundle, emitModule, renderTemplates, generateRuntimeSource }
+export { parseExternals, resolveExternalUrl } from './vite-render.js'
 export { ensureAosRepo, copyAosProcessFiles, injectRequire, stripRequires, generateAosYaml, writeAosYaml } from './aos.js'
 export type { AosYamlOptions } from './aos.js'
 export type { LuaModule, ResolveResult } from './resolver.js'
 export type { TemplateEntry } from './templates.js'
-export type { EscapeResult } from './vite-render.js'
+export type { EscapeResult, ParsedExternals } from './vite-render.js'
 
 export interface BundleResult {
   /** Process name from config */
@@ -135,7 +136,9 @@ export async function bundleProcess(
   }
 
   const viteExternals: (string | RegExp)[] = viteEnabled && process.templates.vite
-    ? (process.templates.vite as Exclude<typeof process.templates.vite, false>).external ?? []
+    ? ((process.templates.vite as Exclude<typeof process.templates.vite, false>).external ?? []).map(
+        (e) => (typeof e === 'object' && !(e instanceof RegExp) && 'name' in e) ? e.name : e,
+      )
     : []
 
   return {

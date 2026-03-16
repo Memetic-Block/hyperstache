@@ -3,6 +3,13 @@ import { resolve, dirname, join, extname, basename } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { UserConfig as ViteUserConfig } from 'vite'
 
+export interface ExternalDep {
+  /** Module name used as the Rollup external and import map key */
+  name: string
+  /** URL to map in a `<script type="importmap">`. Use `ar://<txid>` for Arweave wayfinder URLs. */
+  url: string
+}
+
 export interface ViteTemplateOptions {
   /** Vite plugins to use when processing templates */
   plugins?: ViteUserConfig['plugins']
@@ -12,8 +19,12 @@ export interface ViteTemplateOptions {
   resolve?: ViteUserConfig['resolve']
   /** Define global constant replacements */
   define?: ViteUserConfig['define']
-  /** Dependencies to treat as external (not bundled/inlined by Rollup) */
-  external?: (string | RegExp)[]
+  /** Dependencies to treat as external (not bundled/inlined by Rollup).
+   *  Use `{ name, url }` objects to also inject a `<script type="importmap">`. */
+  external?: (string | RegExp | ExternalDep)[]
+  /** Preserve `type="module"` on inlined scripts and protect pre-existing
+   *  inline `<script>` blocks from Vite transformation. */
+  esm?: boolean
 }
 
 export interface TemplateConfig {

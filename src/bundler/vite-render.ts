@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { randomBytes } from 'node:crypto'
 import type { Plugin, InlineConfig } from 'vite'
 import type { OutputBundle, OutputAsset, OutputChunk } from 'rollup'
-import type { ResolvedProcessConfig } from '../config.js'
+import type { ResolvedProcessConfig, ExternalDep } from '../config.js'
 import type { TemplateEntry } from './templates.js'
 
 // ---------------------------------------------------------------------------
@@ -50,14 +50,117 @@ export function restoreTemplateSyntax(
 }
 
 // ---------------------------------------------------------------------------
+// Inline script escaping
+// ---------------------------------------------------------------------------
+
+export interface InlineScriptEscapeResult {
+  escaped: string
+  markers: Map<number, string>
+}
+
+/**
+ * Inline `<script>` tags (those without a `src` attribute and with non-empty
+ * content) are replaced with HTML comment markers so Vite's HTML pipeline
+ * does not transform them.  The original tags are stored in a Map for later
+ * restoration via {@link restoreInlineScripts}.
+ */
+const INLINE_SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi
+
+export function escapeInlineScripts(html: string): InlineScriptEscapeResult {
+  const markers = new Map<number, string>()
+  let index = 0
+
+  const escaped = html.replace(INLINE_SCRIPT_RE, (match, attrs: string, content: string) => {
+    // Skip script tags that have a src attribute or empty body
+    if (/\bsrc\s*=/i.test(attrs) || !content.trim()) return match
+    const i = index++
+    markers.set(i, match)
+    return `<!--HS_INLINE_SCRIPT_${i}-->`
+  })
+
+  return { escaped, markers }
+}
+
+export function restoreInlineScripts(
+  html: string,
+  markers: Map<number, string>,
+): string {
+  let result = html
+  for (const [i, original] of markers) {
+    result = result.replace(`<!--HS_INLINE_SCRIPT_${i}-->`, original)
+  }
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// External dependency helpers
+// ---------------------------------------------------------------------------
+
+function isExternalDep(entry: string | RegExp | ExternalDep): entry is ExternalDep {
+  return typeof entry === 'object' && !(entry instanceof RegExp) && 'name' in entry && 'url' in entry
+}
+
+/**
+ * Resolve an external URL.  `ar://<txid>` becomes `/<txid>` so the browser
+ * resolves it against the serving hyperbeam node's origin.
+ */
+export function resolveExternalUrl(url: string): string {
+  if (url.startsWith('ar://')) {
+    return '/' + url.slice('ar://'.length)
+  }
+  return url
+}
+
+export interface ParsedExternals {
+  /** Rollup-compatible external list (all dep names + plain string/RegExp entries) */
+  rollupExternals: (string | RegExp)[]
+  /** Import map entries: module name → resolved URL */
+  importMap: Record<string, string>
+}
+
+/**
+ * Split a mixed external array into Rollup externals and import-map entries.
+ */
+export function parseExternals(
+  external: (string | RegExp | ExternalDep)[] | undefined,
+): ParsedExternals {
+  const rollupExternals: (string | RegExp)[] = []
+  const importMap: Record<string, string> = {}
+
+  if (!external) return { rollupExternals, importMap }
+
+  for (const entry of external) {
+    if (isExternalDep(entry)) {
+      rollupExternals.push(entry.name)
+      importMap[entry.name] = resolveExternalUrl(entry.url)
+    } else {
+      rollupExternals.push(entry)
+    }
+  }
+
+  return { rollupExternals, importMap }
+}
+
+// ---------------------------------------------------------------------------
 // Inlining Vite plugin
 // ---------------------------------------------------------------------------
+
+interface InlinePluginOptions {
+  /** Import map entries to inject into HTML <head> */
+  importMap?: Record<string, string>
+  /** When true, preserve `type="module"` on inlined script tags */
+  esm?: boolean
+}
 
 /**
  * A Vite plugin that inlines locally-built CSS and JS assets into the HTML
  * output. Remote URLs (http://, https://, //) are preserved.
+ *
+ * When `importMap` is provided, a `<script type="importmap">` block is
+ * injected into each HTML `<head>` so the browser can resolve bare import
+ * specifiers for external dependencies at runtime.
  */
-function hyperstacheInline(): Plugin {
+function hyperstacheInline(opts: InlinePluginOptions = {}): Plugin {
   return {
     name: 'hyperstache-inline',
     enforce: 'post',
@@ -109,14 +212,26 @@ function hyperstacheInline(): Plugin {
             const jsFile = resolveAssetRef(src, bundle)
             if (!jsFile || jsFile.type !== 'chunk') return _tag
             consumed.add(jsFile.fileName)
-            // Strip type="module" — inlined code runs as classic script
+            // Strip type="module" unless ESM mode is active
             const attrs = (before + after)
-              .replace(/type=["']module["']/gi, '')
+              .replace(...(opts.esm ? [/(?!)/g, ''] as const : [/type=["']module["']/gi, ''] as const))
               .trim()
             const open = attrs ? `<script ${attrs}>` : '<script>'
             return `${open}${jsFile.code}</script>`
           },
         )
+
+        // Inject import map into <head> if there are entries
+        if (opts.importMap && Object.keys(opts.importMap).length > 0) {
+          const mapJson = JSON.stringify({ imports: opts.importMap }, null, 2)
+          const importMapTag = `<script type="importmap">\n${mapJson}\n</script>`
+          // Insert after <head> opening tag, before any other scripts
+          const headIdx = html.search(/<head[^>]*>/i)
+          if (headIdx !== -1) {
+            const headEnd = html.indexOf('>', headIdx) + 1
+            html = html.slice(0, headEnd) + '\n' + importMapTag + html.slice(headEnd)
+          }
+        }
 
         ;(asset as OutputAsset).source = html
       }
@@ -189,26 +304,37 @@ export async function renderTemplates(
   // 2. Escape Mustache syntax and overwrite HTML files in temp
   const escapeMap = new Map<
     string,
-    { entry: TemplateEntry; markers: Map<number, string> }
+    { entry: TemplateEntry; markers: Map<number, string>; inlineScriptMarkers: Map<number, string> }
   >()
+
+  const viteOpts = config.templates.vite as Exclude<
+    typeof config.templates.vite,
+    false
+  >
 
   const inputEntries: Record<string, string> = {}
   for (const entry of htmlEntries) {
-    const { escaped, markers } = escapeTemplateSyntax(entry.content)
+    let html = entry.content
+
+    // Escape pre-existing inline scripts before Vite sees them
+    let inlineScriptMarkers = new Map<number, string>()
+    if (viteOpts.esm) {
+      const inlineResult = escapeInlineScripts(html)
+      html = inlineResult.escaped
+      inlineScriptMarkers = inlineResult.markers
+    }
+
+    const { escaped, markers } = escapeTemplateSyntax(html)
     const tempPath = resolve(tmpBase, entry.key)
     await mkdir(dirname(tempPath), { recursive: true })
     await writeFile(tempPath, escaped, 'utf-8')
     const name = entry.key.replace(/\.[^.]+$/, '')
     inputEntries[name] = tempPath
-    escapeMap.set(entry.key, { entry, markers })
+    escapeMap.set(entry.key, { entry, markers, inlineScriptMarkers })
   }
 
   try {
     // 3. Build with Vite
-    const viteOpts = config.templates.vite as Exclude<
-      typeof config.templates.vite,
-      false
-    >
     const { build, loadConfigFromFile, mergeConfig } = await import('vite')
 
     // Try to load project-level vite.config
@@ -222,6 +348,9 @@ export async function renderTemplates(
       projectConfig = loaded.config
     }
 
+    // Split externals into Rollup externals + import map entries
+    const { rollupExternals, importMap } = parseExternals(viteOpts.external)
+
     // Merge: project vite.config → hyperstache template overrides → forced settings
     const hyperstacheOverrides: InlineConfig = {
       plugins: viteOpts.plugins ?? [],
@@ -230,7 +359,7 @@ export async function renderTemplates(
       define: viteOpts.define,
       build: {
         rollupOptions: {
-          external: viteOpts.external,
+          external: rollupExternals,
         },
       },
     }
@@ -238,7 +367,8 @@ export async function renderTemplates(
     const forcedConfig: InlineConfig = {
       root: tmpBase,
       logLevel: 'warn',
-      plugins: [hyperstacheInline()],
+      plugins: [hyperstacheInline({ importMap, esm: viteOpts.esm })],
+
       build: {
         write: false,
         emptyOutDir: false,
@@ -278,8 +408,9 @@ export async function renderTemplates(
         const matchKey = findMatchingKey(chunk.fileName, escapeMap)
         if (!matchKey) continue
 
-        const { entry, markers } = escapeMap.get(matchKey)!
-        const restored = restoreTemplateSyntax(source, markers)
+        const { entry, markers, inlineScriptMarkers } = escapeMap.get(matchKey)!
+        let restored = restoreTemplateSyntax(source, markers)
+        restored = restoreInlineScripts(restored, inlineScriptMarkers)
 
         processedEntries.push({
           key: entry.key,
