@@ -46,11 +46,10 @@ export async function generateRuntimeSource(options: RuntimeOptions): Promise<st
   let source = await readFile(luaPath('runtime.lua'), 'utf-8')
 
   if (options.handlers) {
-    const handlersSnippet = await readFile(luaPath('runtime-handlers.lua'), 'utf-8')
     // Insert the auto-call just before the final `return hyperstache`
     source = source.replace(
       /\nreturn hyperstache\s*$/,
-      '\n' + handlersSnippet.trimEnd() + '\n\nreturn hyperstache\n',
+      '\nhyperstache.handlers()\n\nreturn hyperstache\n',
     )
   }
 

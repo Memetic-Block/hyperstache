@@ -28,6 +28,10 @@ Bundled artifacts may optionally be output as aos modules ready to be build into
   - [ESM Mode](#esm-mode)
 - [Runtime Template Management](#runtime-template-management)
   - [AO Message Handlers](#ao-message-handlers)
+  - [Access Control (ACL)](#access-control-acl)
+    - [Granting Roles](#granting-roles)
+    - [Admin Delegation](#admin-delegation)
+    - [ACL API](#acl-api)
   - [Per-Process Runtime Override](#per-process-runtime-override)
 - [AOS Module Build](#aos-module-build)
   - [Excluding Default Modules](#excluding-default-modules)
@@ -542,23 +546,106 @@ export default defineConfig({
 })
 ```
 
-This registers five handlers:
+This registers eight handlers:
 
-| Action               | Tags         | Description                       | Access  |
-|----------------------|--------------|-----------------------------------|---------|
-| `Hyperstache-Get`    | `Key`        | Returns raw template content      | Anyone  |
-| `Hyperstache-List`   |              | Returns all template keys         | Anyone  |
-| `Hyperstache-Render` | `Key`        | Renders template with `msg.Data`  | Anyone  |
-| `Hyperstache-Set`    | `Key`        | Creates/updates a template        | Owner   |
-| `Hyperstache-Remove` | `Key`        | Deletes a template                | Owner   |
+| Action                   | Tags              | Description                             | Access       |
+|--------------------------|-------------------|-----------------------------------------|--------------|
+| `Hyperstache-Get`        | `Key`             | Returns raw template content            | Anyone       |
+| `Hyperstache-List`       |                   | Returns all template keys               | Anyone       |
+| `Hyperstache-Render`     | `Key`             | Renders template with `msg.Data`        | Anyone       |
+| `Hyperstache-Set`        | `Key`             | Creates/updates a template              | Permitted    |
+| `Hyperstache-Remove`     | `Key`             | Deletes a template                      | Permitted    |
+| `Hyperstache-Grant-Role` | `Address`, `Role` | Grants an ACL role to an address        | Owner/Admin  |
+| `Hyperstache-Revoke-Role`| `Address`, `Role` | Revokes an ACL role from an address     | Owner/Admin  |
+| `Hyperstache-Get-Roles`  | `Address`         | Returns roles for an address (or all)   | Anyone       |
 
-Mutation operations (`Set`, `Remove`) are guarded by an `msg.From == Owner` check.
+Mutation operations (`Set`, `Remove`) are guarded by a permission check — the caller must be the process Owner, have the `admin` role, or have been granted the specific action (e.g. `Hyperstache-Set`).
 
 You can also register handlers manually from your process code:
 
 ```lua
 local hs = require('hyperstache')
-hs.handlers()  -- registers all five handlers
+hs.handlers()  -- registers all eight handlers
+```
+
+### Access Control (ACL)
+
+The runtime includes a role-based access control system. The process **Owner** always has full access. Other addresses can be granted per-action permissions or the `admin` role, which grants all write permissions plus the ability to manage roles for others.
+
+ACL state is stored in the lowercase global `hyperstache_acl` (auto-persisted by AO across reloads).
+
+#### Granting Roles
+
+Grant a specific action to an address:
+
+```lua
+-- From AO messages:
+Send({
+  Target = process_id,
+  Action = 'Hyperstache-Grant-Role',
+  Tags = { Address = 'some-wallet-address', Role = 'Hyperstache-Set' }
+})
+```
+
+Valid role values:
+
+| Role                | Effect                                         |
+|---------------------|-------------------------------------------------|
+| `admin`             | All write actions + can grant/revoke non-admin roles |
+| `Hyperstache-Set`   | Can create/update templates                     |
+| `Hyperstache-Remove`| Can delete templates                            |
+
+Revoke a role the same way:
+
+```lua
+Send({
+  Target = process_id,
+  Action = 'Hyperstache-Revoke-Role',
+  Tags = { Address = 'some-wallet-address', Role = 'Hyperstache-Set' }
+})
+```
+
+Query roles for an address (public):
+
+```lua
+Send({
+  Target = process_id,
+  Action = 'Hyperstache-Get-Roles',
+  Tags = { Address = 'some-wallet-address' }
+})
+-- Returns: newline-separated role names, e.g. "Hyperstache-Set\nHyperstache-Remove"
+
+-- Omit Address to get all ACL entries:
+Send({ Target = process_id, Action = 'Hyperstache-Get-Roles' })
+-- Returns: "address1:role1,role2\naddress2:role3"
+```
+
+#### Admin Delegation
+
+- The **Owner** can grant and revoke any role, including `admin`
+- An **admin** can grant and revoke per-action roles (`Hyperstache-Set`, `Hyperstache-Remove`) but **cannot** grant or revoke the `admin` role — only the Owner can escalate or de-escalate admin privileges
+
+#### ACL API
+
+The ACL functions are also available directly in Lua:
+
+```lua
+local hs = require('hyperstache')
+
+-- Check if an address has permission for an action
+hs.has_permission(address, 'Hyperstache-Set')  -- true/false
+
+-- Grant a role
+hs.grant(address, 'Hyperstache-Set')
+
+-- Revoke a role (cleans up empty entries)
+hs.revoke(address, 'Hyperstache-Set')
+
+-- Get roles for an address (returns table, e.g. { ["Hyperstache-Set"] = true })
+hs.get_roles(address)
+
+-- Get all ACL entries (returns full hyperstache_acl table)
+hs.get_roles()
 ```
 
 ### Per-Process Runtime Override
