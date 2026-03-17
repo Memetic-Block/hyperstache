@@ -10,11 +10,21 @@ export interface RuntimeOptions {
 
 /**
  * Resolve the path to a bundled Lua runtime file.
+ *
+ * In source: src/bundler/runtime.ts → ../../src/lua/<name>
+ * In dist (with splitting): dist/chunk-xxx.js → ./lua/<name>
+ *
+ * We detect which layout we're in by checking whether __dirname
+ * ends with `src/bundler` (running from source / ts-node) or not
+ * (running from the flat dist output produced by tsup with splitting).
  */
 function luaPath(name: string): string {
-  // In source: src/bundler/runtime.ts → src/lua/<name>
-  // In dist:   dist/lua/<name>
-  return resolve(__dirname, '..', 'lua', name)
+  if (__dirname.endsWith('src/bundler') || __dirname.endsWith('src\\bundler')) {
+    // Running from source
+    return resolve(__dirname, '..', 'lua', name)
+  }
+  // Running from dist/ (flat chunk alongside dist/lua/)
+  return resolve(__dirname, 'lua', name)
 }
 
 /**
