@@ -47,8 +47,8 @@ function hyperstache.sync()
 end
 
 function hyperstache.handlers()
-  Handlers.add("Hyperstache.Get",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache.Get"),
+  Handlers.add("Hyperstache-Get",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-Get"),
     function(msg)
       local key = msg.Tags.Key or msg.Tags.key
       local tmpl = hyperstache.get(key)
@@ -56,16 +56,16 @@ function hyperstache.handlers()
     end
   )
 
-  Handlers.add("Hyperstache.List",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache.List"),
+  Handlers.add("Hyperstache-List",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-List"),
     function(msg)
       local keys = hyperstache.list()
       msg.reply({ Data = table.concat(keys, "\n") })
     end
   )
 
-  Handlers.add("Hyperstache.Render",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache.Render"),
+  Handlers.add("Hyperstache-Render",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-Render"),
     function(msg)
       local key = msg.Tags.Key or msg.Tags.key
       local ok, result = pcall(hyperstache.render, key, msg.Data or {})
@@ -77,8 +77,8 @@ function hyperstache.handlers()
     end
   )
 
-  Handlers.add("Hyperstache.Set",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache.Set"),
+  Handlers.add("Hyperstache-Set",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-Set"),
     function(msg)
       assert(msg.From == Owner, "only the owner can set templates")
       local key = msg.Tags.Key or msg.Tags.key
@@ -87,8 +87,8 @@ function hyperstache.handlers()
     end
   )
 
-  Handlers.add("Hyperstache.Remove",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache.Remove"),
+  Handlers.add("Hyperstache-Remove",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-Remove"),
     function(msg)
       assert(msg.From == Owner, "only the owner can remove templates")
       local key = msg.Tags.Key or msg.Tags.key

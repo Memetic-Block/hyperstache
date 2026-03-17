@@ -110,7 +110,7 @@ describe('bundle integration', () => {
     expect(afterEntry).toContain('require("hyperstache")')
 
     // Should auto-register handlers inside the module
-    expect(result.output).toContain('Handlers.add("Hyperstache.Get"')
+    expect(result.output).toContain('Handlers.add("Hyperstache-Get"')
     expect(result.output).toContain('hyperstache.handlers()')
   })
 })

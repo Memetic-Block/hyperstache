@@ -64,11 +64,11 @@ describe('generateRuntimeSource', () => {
   it('registers all expected AO handlers', async () => {
     const source = await generateRuntimeSource({ handlers: false })
 
-    expect(source).toContain('"Hyperstache.Get"')
-    expect(source).toContain('"Hyperstache.Set"')
-    expect(source).toContain('"Hyperstache.Remove"')
-    expect(source).toContain('"Hyperstache.List"')
-    expect(source).toContain('"Hyperstache.Render"')
+    expect(source).toContain('"Hyperstache-Get"')
+    expect(source).toContain('"Hyperstache-Set"')
+    expect(source).toContain('"Hyperstache-Remove"')
+    expect(source).toContain('"Hyperstache-List"')
+    expect(source).toContain('"Hyperstache-Render"')
   })
 
   it('guards mutation handlers with Owner check', async () => {

@@ -118,23 +118,21 @@ Write your Lua process:
 
 ```lua
 -- src/process.lua
-local templates = require('templates')
-local lustache = require('lustache')
+local hs = require('hyperstache')
 
 Send({
   device = 'patch@1.0',
-  home = lustache:render(templates['index.html'], { title = 'Hello' })
+  home = hs.render(hs.get('index.html'), { greeting = 'Hello' })
 })
 ```
 
 Or Dynamic Read module:
 ```lua
 -- src/dynamic_read.lua
-local templates = require('templates')
-local lustache = require('lustache')
+local hs = require('hyperstache')
 
 function hello_world(base, req)
-  return lustache:render(templates['index.html'], { title = 'Hello, ' .. req.name .. '!' })
+  return hs.render(hs.get('index.html'), { greeting = 'Hello, ' .. req.name .. '!' })
 end
 ```
 
@@ -144,9 +142,9 @@ Add HTML templates alongside your Lua source:
 <!-- src/templates/index.html -->
 <!DOCTYPE html>
 <html>
-<head><title>{{title}}</title></head>
+<head><title>{{greeting}}</title></head>
 <body>
-  <h1>{{title}}</h1>
+  <h1>{{greeting}}</h1>
 </body>
 </html>
 ```
@@ -460,8 +458,7 @@ With ESM mode enabled, you can author templates like this:
 <html>
 <head><title>{{title}}</title></head>
 <body>
-  <script crossorigin type="module">globalThis.process={browser:!0,env:{}}</script>
-  <script crossorigin type="module" src="./app.ts"></script>
+  <script type="module" src="./app.ts"></script>
 </body>
 </html>
 ```
@@ -470,8 +467,7 @@ After building, the output preserves both scripts — existing inline scripts ar
 
 ```html
 <body>
-  <script crossorigin type="module">globalThis.process={browser:!0,env:{}}</script>
-  <script crossorigin type="module">/* transpiled app.ts code */</script>
+  <script type="module">/* transpiled app.ts code */</script>
 </body>
 ```
 
@@ -527,7 +523,7 @@ hs.sync()
 The runtime module:
 
 - **Seeds from build-time templates** — On first load, all bundled templates are copied into the runtime store. On redeployment, new bundled templates merge in without overwriting runtime modifications.
-- **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`, which AO auto-persists across process reloads.
+- **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`
 - **Integrates with lustache** — `hs.render(key, data)` calls `lustache:render()` directly.
 
 ### AO Message Handlers
@@ -550,11 +546,11 @@ This registers five handlers:
 
 | Action               | Tags         | Description                       | Access  |
 |----------------------|--------------|-----------------------------------|---------|
-| `Hyperstache.Get`    | `Key`        | Returns raw template content      | Anyone  |
-| `Hyperstache.List`   |              | Returns all template keys         | Anyone  |
-| `Hyperstache.Render` | `Key`        | Renders template with `msg.Data`  | Anyone  |
-| `Hyperstache.Set`    | `Key`        | Creates/updates a template        | Owner   |
-| `Hyperstache.Remove` | `Key`        | Deletes a template                | Owner   |
+| `Hyperstache-Get`    | `Key`        | Returns raw template content      | Anyone  |
+| `Hyperstache-List`   |              | Returns all template keys         | Anyone  |
+| `Hyperstache-Render` | `Key`        | Renders template with `msg.Data`  | Anyone  |
+| `Hyperstache-Set`    | `Key`        | Creates/updates a template        | Owner   |
+| `Hyperstache-Remove` | `Key`        | Deletes a template                | Owner   |
 
 Mutation operations (`Set`, `Remove`) are guarded by an `msg.From == Owner` check.
 
@@ -604,7 +600,7 @@ When `aos` is set, the build changes for `type: 'process'` entries (the default)
 1. **Clones the aos repo** at the specified commit from `https://github.com/permaweb/aos`
 2. **Copies all `.lua` files** from the repo's `process/` directory into your output
 3. **Wraps your bundle as a module** — your bundled Lua is output as `{processName}.lua` instead of `process.lua`, wrapped so all side effects (handler registration, etc.) execute on `require()`
-4. **Injects `require("{processName}")`** into the copied `process.lua` after the last `Handlers.add`/`Handlers.append` call
+4. **Injects `require(".{processName}")`** into the copied `process.lua` after the last `Handlers.add`/`Handlers.append` call
 5. **Generates a `config.yml`** with ao-dev-cli options (memory settings, WASM target, compute limit, module format)
 
 Entries with `type: 'module'` are **not affected** by the `aos` option — they always produce a raw bundle output without any AOS integration.
