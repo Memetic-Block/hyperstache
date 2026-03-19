@@ -113,4 +113,63 @@ describe('bundle integration', () => {
     expect(result.output).toContain('Handlers.add("Hyperstache-Get"')
     expect(result.output).toContain('hyperstache.handlers()')
   })
+
+  it('bundles with admin interface when enabled', async () => {
+    const config = await resolveConfig(
+      {
+        processes: {
+          main: { entry: 'src/process.lua' },
+        },
+        outDir: 'dist',
+        runtime: { adminInterface: true },
+      },
+      fixtureRoot,
+    )
+
+    const results = await bundle(config)
+    const result = results[0]
+
+    expect(result.runtimeIncluded).toBe(true)
+    expect(result.adminIncluded).toBe(true)
+
+    // Admin module should be registered
+    expect(result.output).toContain('_modules["hyperstache-admin"]')
+
+    // Admin module should appear after runtime module
+    const runtimeIdx = result.output.indexOf('_modules["hyperstache"]')
+    const adminIdx = result.output.indexOf('_modules["hyperstache-admin"]')
+    expect(adminIdx).toBeGreaterThan(runtimeIdx)
+
+    // Should auto-require admin in entry section
+    const entryIdx = result.output.indexOf('-- Entry point')
+    const afterEntry = result.output.slice(entryIdx)
+    expect(afterEntry).toContain('require("hyperstache-admin")')
+
+    // Should contain admin UI HTML
+    expect(result.output).toContain('Hyperstache Admin')
+    expect(result.output).toContain('patch@1.0')
+
+    // Handlers should be forced on by adminInterface
+    expect(result.output).toContain('hyperstache.handlers()')
+  })
+
+  it('bundles admin interface with custom path key', async () => {
+    const config = await resolveConfig(
+      {
+        processes: {
+          main: { entry: 'src/process.lua' },
+        },
+        outDir: 'dist',
+        runtime: { adminInterface: { path: 'manage' } },
+      },
+      fixtureRoot,
+    )
+
+    const results = await bundle(config)
+    const result = results[0]
+
+    expect(result.adminIncluded).toBe(true)
+    expect(result.output).toContain('local _path = "manage"')
+    expect(result.output).not.toContain('__ADMIN_PATH__')
+  })
 })

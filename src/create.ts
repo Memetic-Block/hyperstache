@@ -6,6 +6,7 @@ const VALID_NAME = /^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/
 export interface CreateFlags {
   typescript?: boolean
   esm?: boolean
+  admin?: boolean
 }
 
 interface FileEntry {
@@ -90,6 +91,9 @@ h1 {
 
 function config(flags: CreateFlags): string {
   const viteValue = flags.esm ? '{\n      esm: true,\n    }' : 'true'
+  const runtimeBlock = flags.admin
+    ? `\n  runtime: {\n    handlers: true,\n    adminInterface: true,\n  },`
+    : ''
   return `import { defineConfig } from 'hyperstache'
 
 export default defineConfig({
@@ -98,7 +102,7 @@ export default defineConfig({
   },
   templates: {
     vite: ${viteValue},
-  },
+  },${runtimeBlock}
   luarocks: {
     dependencies: {
       lustache: '1.3.1-0',

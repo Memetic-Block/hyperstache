@@ -150,6 +150,39 @@ describe('createProject', () => {
     })
   })
 
+  describe('--admin', () => {
+    it('creates base files (same as default)', async () => {
+      await createProject('my-app', { admin: true }, tmp)
+      const files = await listFiles(join(tmp, 'my-app'))
+      expect(files).toEqual(BASE_FILES)
+    })
+
+    it('config includes adminInterface: true', async () => {
+      await createProject('my-app', { admin: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      expect(config).toContain('adminInterface: true')
+    })
+
+    it('config includes handlers: true when admin is set', async () => {
+      await createProject('my-app', { admin: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      expect(config).toContain('handlers: true')
+    })
+
+    it('config has runtime block with admin', async () => {
+      await createProject('my-app', { admin: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      expect(config).toContain('runtime:')
+    })
+
+    it('config does not include runtime block without admin flag', async () => {
+      await createProject('my-app', {}, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      expect(config).not.toContain('adminInterface')
+      expect(config).not.toContain('runtime:')
+    })
+  })
+
   describe('validation', () => {
     it('rejects invalid project names', async () => {
       await expect(createProject('My App!', {}, tmp)).rejects.toThrow('Invalid project name')
@@ -175,6 +208,7 @@ describe('createProject', () => {
       { label: '--typescript', flags: { typescript: true } },
       { label: '--esm', flags: { esm: true } },
       { label: '--typescript --esm', flags: { typescript: true, esm: true } },
+      { label: '--admin', flags: { admin: true } },
     ]
 
     for (const { label, flags } of flagCombos) {

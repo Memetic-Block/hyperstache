@@ -6,9 +6,12 @@ import { collectTemplates } from './templates.js'
 import { emitBundle, emitModule } from './emit.js'
 import { renderTemplates } from './vite-render.js'
 import { generateRuntimeSource } from './runtime.js'
+import { generateAdminSource } from './admin.js'
 import { ensureAosRepo, copyAosProcessFiles, injectRequire, stripRequires, writeAosYaml } from './aos.js'
 
 export { resolveModules, collectTemplates, emitBundle, emitModule, renderTemplates, generateRuntimeSource }
+export { generateAdminSource } from './admin.js'
+export type { AdminOptions } from './admin.js'
 export { parseExternals, resolveExternalUrl } from './vite-render.js'
 export { ensureAosRepo, copyAosProcessFiles, injectRequire, stripRequires, generateAosYaml, writeAosYaml } from './aos.js'
 export type { AosYamlOptions } from './aos.js'
@@ -33,6 +36,8 @@ export interface BundleResult {
   viteProcessed: boolean
   /** Whether the hyperstache runtime module is included */
   runtimeIncluded: boolean
+  /** Whether the admin interface module is included */
+  adminIncluded: boolean
   /** Artifact type: 'process' or 'module' */
   type: 'process' | 'module'
   /** Whether this was built as an aos module */
@@ -98,13 +103,22 @@ export async function bundleProcess(
     runtimeSource = await generateRuntimeSource({ handlers: process.runtime.handlers })
   }
 
+  // 4b. Generate admin module if enabled
+  let adminSource: string | null = null
+  if (process.runtime.adminInterface.enabled) {
+    adminSource = await generateAdminSource({
+      handlers: true,
+      path: process.runtime.adminInterface.path,
+    })
+  }
+
   // 5. Emit bundle
   // Modules always use raw emitBundle (no _init wrapper), even when aos is enabled
   const isModule = process.type === 'module'
   const useAos = aos.enabled && !isModule
   const output = useAos
-    ? emitModule(modules, templatesSource, runtimeSource, process.runtime.handlers)
-    : emitBundle(modules, templatesSource, runtimeSource, process.runtime.handlers)
+    ? emitModule(modules, templatesSource, runtimeSource, process.runtime.handlers, adminSource, process.runtime.adminInterface.enabled)
+    : emitBundle(modules, templatesSource, runtimeSource, process.runtime.handlers, adminSource, process.runtime.adminInterface.enabled)
 
   // 6. Determine output paths
   // When aos is enabled (for processes only), nest under processName subdir
@@ -151,6 +165,7 @@ export async function bundleProcess(
     templateCount: entries.length,
     viteProcessed: viteEnabled && entries.length > 0,
     runtimeIncluded: process.runtime.enabled,
+    adminIncluded: process.runtime.adminInterface.enabled,
     aosModule: useAos,
     aosCopiedFiles,
     aosYamlPath,

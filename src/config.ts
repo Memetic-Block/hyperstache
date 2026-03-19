@@ -43,9 +43,17 @@ export interface LuarocksConfig {
   luaVersion?: string
 }
 
+export interface AdminInterfaceConfig {
+  /** Path key used when publishing to patch@1.0 (default: "admin") */
+  path?: string
+}
+
 export interface RuntimeConfig {
   /** Enable AO message handlers for template CRUD */
   handlers?: boolean
+  /** Enable admin UI for template & ACL management. `true` for defaults, or pass options.
+   *  Implicitly enables `handlers` when set. */
+  adminInterface?: boolean | AdminInterfaceConfig
 }
 
 export interface AosConfig {
@@ -122,6 +130,10 @@ export interface ResolvedProcessConfig {
   runtime: {
     enabled: boolean
     handlers: boolean
+    adminInterface: {
+      enabled: boolean
+      path: string
+    }
   }
 }
 
@@ -194,11 +206,22 @@ function mergeLuarocksConfig(
 function resolveRuntimeOpts(
   shared: boolean | RuntimeConfig | undefined,
   process: boolean | RuntimeConfig | undefined,
-): { enabled: boolean; handlers: boolean } {
+): { enabled: boolean; handlers: boolean; adminInterface: { enabled: boolean; path: string } } {
   const raw = process ?? shared
-  if (raw === true) return { enabled: true, handlers: false }
-  if (raw === false || raw == null) return { enabled: false, handlers: false }
-  return { enabled: true, handlers: raw.handlers ?? false }
+  if (raw === true) return { enabled: true, handlers: false, adminInterface: { enabled: false, path: 'admin' } }
+  if (raw === false || raw == null) return { enabled: false, handlers: false, adminInterface: { enabled: false, path: 'admin' } }
+  const adminRaw = raw.adminInterface
+  const adminInterface = adminRaw === true
+    ? { enabled: true, path: 'admin' }
+    : adminRaw && typeof adminRaw === 'object'
+      ? { enabled: true, path: adminRaw.path ?? 'admin' }
+      : { enabled: false, path: 'admin' }
+  const handlers = raw.handlers ?? false
+  return {
+    enabled: true,
+    handlers: adminInterface.enabled ? true : handlers,
+    adminInterface,
+  }
 }
 
 export async function resolveConfig(

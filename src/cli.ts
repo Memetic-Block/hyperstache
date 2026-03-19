@@ -108,8 +108,9 @@ program
   .argument('[name]', 'Project name')
   .option('-T, --typescript', 'Include TypeScript support')
   .option('-e, --esm', 'Enable ESM mode for inlined scripts')
+  .option('-a, --admin', 'Include admin interface for template & ACL management')
   .option('-d, --directory <dir>', 'Parent directory for the new project')
-  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean; directory?: string }) => {
+  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean; admin?: boolean; directory?: string }) => {
     if (!name) {
       const { createInterface } = await import('node:readline/promises')
       const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -124,6 +125,7 @@ program
     const flags: CreateFlags = {
       typescript: opts.typescript,
       esm: opts.esm,
+      admin: opts.admin,
     }
     const parentDir = opts.directory ? resolve(opts.directory) : process.cwd()
     try {

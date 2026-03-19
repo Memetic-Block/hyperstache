@@ -26,5 +26,6 @@ export default defineConfig({
     const outDir = resolve('dist', 'lua')
     mkdirSync(outDir, { recursive: true })
     copyFileSync(resolve('src', 'lua', 'runtime.lua'), resolve(outDir, 'runtime.lua'))
+    copyFileSync(resolve('src', 'lua', 'admin.lua'), resolve(outDir, 'admin.lua'))
   },
 })
