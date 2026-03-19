@@ -1,5 +1,5 @@
 import { mkdir, writeFile, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 
 const VALID_NAME = /^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/
 
@@ -239,13 +239,22 @@ export async function createProject(
   return projectDir
 }
 
-export function printNextSteps(name: string): void {
+export function printNextSteps(name: string, projectDir?: string): void {
+  const cwd = process.cwd()
+  let cdTarget: string
+  if (projectDir) {
+    const rel = relative(cwd, projectDir)
+    cdTarget = rel.startsWith('..') ? projectDir : rel
+  } else {
+    cdTarget = name
+  }
+
   console.log()
-  console.log(`  Created ${name}/`)
+  console.log(`  Created ${cdTarget}/`)
   console.log()
   console.log('  Next steps:')
   console.log()
-  console.log(`    cd ${name}`)
+  console.log(`    cd ${cdTarget}`)
   console.log('    npm install')
   console.log('    npx hyperstache rockspec')
   console.log('    luarocks make --only-deps --tree lua_modules *.rockspec')

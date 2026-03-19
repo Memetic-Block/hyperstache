@@ -81,12 +81,16 @@ npx hyperstache create my-app --esm
 
 # Combine flags
 npx hyperstache create my-app --typescript --esm
+
+# Specify a target directory
+npx hyperstache create my-app --directory ~/projects
 ```
 
 | Flag           | Effect                                                       |
 |----------------|--------------------------------------------------------------|
 | `--typescript` | Adds TypeScript: tsconfig.json, app.ts entry, TS devDep      |
 | `--esm`        | Enables ESM mode in the Vite config (`vite: { esm: true }`)  |
+| `--directory`  | Parent directory for the new project (default: current dir)   |
 
 All scaffolded projects include Vite template processing, CSS, and a dev server out of the box.
 
@@ -814,7 +818,7 @@ and made available via `require('templates')` as a table keyed by relative path.
 
 ```bash
 # Create a new project
-hyperstache create [name] [--typescript] [--esm]
+hyperstache create [name] [--typescript] [--esm] [--directory <dir>]
 
 # Bundle all processes
 hyperstache build
@@ -845,6 +849,7 @@ Options for `create`:
 
 - `-T, --typescript` — Include TypeScript support
 - `-e, --esm` — Enable ESM mode for inlined scripts
+- `-d, --directory <dir>` — Parent directory for the new project (default: `.`)
 
 ## Configuration
 

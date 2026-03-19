@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { createProject } from '../src/create.js'
+import { createProject, printNextSteps } from '../src/create.js'
 import type { CreateFlags } from '../src/create.js'
 
 let tmp: string
@@ -171,5 +171,49 @@ describe('createProject', () => {
         expect(gi).toContain('dist')
       })
     }
+  })
+
+  describe('printNextSteps', () => {
+    it('uses project name when no projectDir given', () => {
+      const logs: string[] = []
+      const orig = console.log
+      console.log = (...args: unknown[]) => logs.push(args.join(' '))
+      try {
+        printNextSteps('my-app')
+      } finally {
+        console.log = orig
+      }
+      expect(logs.some(l => l.includes('cd my-app'))).toBe(true)
+      expect(logs.some(l => l.includes('Created my-app/'))).toBe(true)
+    })
+
+    it('uses relative path when projectDir is under cwd', () => {
+      const logs: string[] = []
+      const orig = console.log
+      console.log = (...args: unknown[]) => logs.push(args.join(' '))
+      try {
+        printNextSteps('my-app', join(process.cwd(), 'projects', 'my-app'))
+      } finally {
+        console.log = orig
+      }
+      expect(logs.some(l => l.includes('cd projects/my-app'))).toBe(true)
+    })
+
+    it('uses absolute path when projectDir is outside cwd', () => {
+      const logs: string[] = []
+      const orig = console.log
+      console.log = (...args: unknown[]) => logs.push(args.join(' '))
+      try {
+        printNextSteps('my-app', '/tmp/elsewhere/my-app')
+      } finally {
+        console.log = orig
+      }
+      expect(logs.some(l => l.includes('cd /tmp/elsewhere/my-app'))).toBe(true)
+    })
+
+    it('returns the correct project directory for custom parentDir', async () => {
+      const projectDir = await createProject('my-app', {}, tmp)
+      expect(projectDir).toBe(join(tmp, 'my-app'))
+    })
   })
 })

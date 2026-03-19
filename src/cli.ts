@@ -108,7 +108,8 @@ program
   .argument('[name]', 'Project name')
   .option('-T, --typescript', 'Include TypeScript support')
   .option('-e, --esm', 'Enable ESM mode for inlined scripts')
-  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean }) => {
+  .option('-d, --directory <dir>', 'Parent directory for the new project')
+  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean; directory?: string }) => {
     if (!name) {
       const { createInterface } = await import('node:readline/promises')
       const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -124,9 +125,10 @@ program
       typescript: opts.typescript,
       esm: opts.esm,
     }
+    const parentDir = opts.directory ? resolve(opts.directory) : process.cwd()
     try {
-      await createProject(name, flags)
-      printNextSteps(name)
+      const projectDir = await createProject(name, flags, parentDir)
+      printNextSteps(name, projectDir)
     } catch (err: unknown) {
       console.error((err as Error).message)
       process.exit(1)
