@@ -109,9 +109,8 @@ export default defineConfig({
 }
 
 function indexHtml(flags: CreateFlags): string {
-  const scriptTag = flags.typescript
-    ? '\n  <div id="greeting"></div>\n  <script type="module" src="./app.ts"></script>'
-    : ''
+  const ext = flags.typescript ? 'ts' : 'js'
+  const type = flags.esm ? ' type="module"' : ''
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -120,9 +119,25 @@ function indexHtml(flags: CreateFlags): string {
 </head>
 <body>
   <h1>{{title}}</h1>
-  <p>Hello, {{name}}!</p>${scriptTag}
+  <p>Hello, {{name}}!</p>
+  <div id="greeting"></div>
+  <script${type} src="./app.${ext}"></script>
 </body>
 </html>
+`
+}
+
+function appJs(): string {
+  return `function greet(name) {
+  return \`Hello, \${name}!\`
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('greeting')
+  if (el) {
+    el.textContent = greet('World')
+  }
+})
 `
 }
 
@@ -195,6 +210,8 @@ function buildFiles(name: string, flags: CreateFlags): FileEntry[] {
       { path: 'tsconfig.json', content: tsconfig() },
       { path: 'src/templates/app.ts', content: appTs() },
     )
+  } else {
+    files.push({ path: 'src/templates/app.js', content: appJs() })
   }
 
   return files

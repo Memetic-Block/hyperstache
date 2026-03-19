@@ -37,6 +37,7 @@ describe('createProject', () => {
     'package.json',
     'src/lib/utils.lua',
     'src/process.lua',
+    'src/templates/app.js',
     'src/templates/index.html',
     'src/templates/styles.css',
   ]
@@ -66,6 +67,13 @@ describe('createProject', () => {
       const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
       expect(config).not.toContain('esm')
     })
+
+    it('html includes app.js script without type="module"', async () => {
+      await createProject('my-app', {}, tmp)
+      const html = await readFile(join(tmp, 'my-app/src/templates/index.html'), 'utf-8')
+      expect(html).toContain('<script src="./app.js">')
+      expect(html).not.toContain('type="module"')
+    })
   })
 
   describe('--typescript', () => {
@@ -88,6 +96,14 @@ describe('createProject', () => {
       await createProject('my-app', { typescript: true }, tmp)
       const html = await readFile(join(tmp, 'my-app/src/templates/index.html'), 'utf-8')
       expect(html).toContain('app.ts')
+      expect(html).not.toContain('app.js')
+    })
+
+    it('html does not include type="module" without --esm', async () => {
+      await createProject('my-app', { typescript: true }, tmp)
+      const html = await readFile(join(tmp, 'my-app/src/templates/index.html'), 'utf-8')
+      expect(html).toContain('<script src="./app.ts">')
+      expect(html).not.toContain('type="module"')
     })
   })
 
@@ -103,6 +119,12 @@ describe('createProject', () => {
       const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
       expect(config).toContain('esm: true')
     })
+
+    it('html includes app.js script with type="module"', async () => {
+      await createProject('my-app', { esm: true }, tmp)
+      const html = await readFile(join(tmp, 'my-app/src/templates/index.html'), 'utf-8')
+      expect(html).toContain('<script type="module" src="./app.js">')
+    })
   })
 
   describe('--typescript --esm', () => {
@@ -113,6 +135,13 @@ describe('createProject', () => {
       expect(files).toContain('src/templates/app.ts')
       const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
       expect(config).toContain('esm: true')
+    })
+
+    it('html includes app.ts script with type="module"', async () => {
+      await createProject('my-app', { typescript: true, esm: true }, tmp)
+      const html = await readFile(join(tmp, 'my-app/src/templates/index.html'), 'utf-8')
+      expect(html).toContain('<script type="module" src="./app.ts">')
+      expect(html).not.toContain('app.js')
     })
 
     it('includes typescript in devDependencies', async () => {
