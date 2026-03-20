@@ -36,19 +36,37 @@ function hyperstache.list()
   return keys
 end
 
-function hyperstache.renderTemplate(key, data)
+function hyperstache.renderTemplate(key, data, partials)
   local tmpl = hyperstache_templates[key]
   if not tmpl then
     error("template not found: " .. tostring(key))
   end
-  return lustache:render(tmpl, data)
+  local merged = {}
+  for k, v in pairs(hyperstache_templates) do
+    merged[k] = v
+  end
+  if partials then
+    for k, v in pairs(partials) do
+      merged[k] = v
+    end
+  end
+  return lustache:render(tmpl, data, merged)
 end
 
-function hyperstache.render(template, data)
+function hyperstache.render(template, data, partials)
   if type(template) ~= "string" then
     error("expected string template, got " .. type(template))
   end
-  return lustache:render(template, data)
+  local merged = {}
+  for k, v in pairs(hyperstache_templates) do
+    merged[k] = v
+  end
+  if partials then
+    for k, v in pairs(partials) do
+      merged[k] = v
+    end
+  end
+  return lustache:render(template, data, merged)
 end
 
 function hyperstache.sync()
@@ -117,8 +135,13 @@ function hyperstache.handlers()
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-RenderTemplate"),
     function(msg)
       local key = msg.Tags.Key or msg.Tags.key
-      local ok, result = pcall(hyperstache.renderTemplate, key, msg.Data or {})
-      if ok then
+      local ok, parsed = pcall(json.decode, msg.Data or "{}")
+      if not ok then
+        msg.reply({ Data = "", Error = "invalid JSON: " .. tostring(parsed) })
+        return
+      end
+      local ok2, result = pcall(hyperstache.renderTemplate, key, parsed.data or {}, parsed.partials)
+      if ok2 then
         msg.reply({ Data = result })
       else
         msg.reply({ Data = "", Error = result })
@@ -135,7 +158,7 @@ function hyperstache.handlers()
         return
       end
       local tmpl = parsed.template or ""
-      local ok2, result = pcall(hyperstache.render, tmpl, parsed.data or {})
+      local ok2, result = pcall(hyperstache.render, tmpl, parsed.data or {}, parsed.partials)
       if ok2 then
         msg.reply({ Data = result })
       else

@@ -17,17 +17,17 @@ describe('generateRuntimeSource', () => {
     expect(source).toContain('function hyperstache.set(key, content)')
     expect(source).toContain('function hyperstache.remove(key)')
     expect(source).toContain('function hyperstache.list()')
-    expect(source).toContain('function hyperstache.renderTemplate(key, data)')
-    expect(source).toContain('function hyperstache.render(template, data)')
+    expect(source).toContain('function hyperstache.renderTemplate(key, data, partials)')
+    expect(source).toContain('function hyperstache.render(template, data, partials)')
     expect(source).toContain('function hyperstache.sync()')
     expect(source).toContain('function hyperstache.handlers()')
 
     // Should return the module
     expect(source).toContain('return hyperstache')
 
-    // Should use lustache for rendering
-    expect(source).toContain('lustache:render(tmpl, data)')
-    expect(source).toContain('lustache:render(template, data)')
+    // Should use lustache for rendering with partials
+    expect(source).toContain('lustache:render(tmpl, data, merged)')
+    expect(source).toContain('lustache:render(template, data, merged)')
   })
 
   it('merges bundled templates without overwriting existing keys', async () => {
@@ -204,5 +204,64 @@ describe('generateRuntimeSource', () => {
     // Should NOT contain any permission check
     expect(getRolesBody).not.toContain('has_permission')
     expect(getRolesBody).not.toContain('assert')
+  })
+
+  it('renderTemplate builds merged partials from hyperstache_templates', async () => {
+    const source = await generateRuntimeSource({ handlers: false })
+
+    const fnStart = source.indexOf('function hyperstache.renderTemplate(')
+    const fnEnd = source.indexOf('\nend', fnStart)
+    const fnBody = source.slice(fnStart, fnEnd)
+
+    // Should copy hyperstache_templates as base partials
+    expect(fnBody).toContain('for k, v in pairs(hyperstache_templates)')
+    expect(fnBody).toContain('merged[k] = v')
+    // Should overlay explicit partials
+    expect(fnBody).toContain('if partials then')
+    expect(fnBody).toContain('for k, v in pairs(partials)')
+    // Should pass merged to lustache
+    expect(fnBody).toContain('lustache:render(tmpl, data, merged)')
+  })
+
+  it('render builds merged partials from hyperstache_templates', async () => {
+    const source = await generateRuntimeSource({ handlers: false })
+
+    const fnStart = source.indexOf('function hyperstache.render(')
+    const fnEnd = source.indexOf('\nend', fnStart)
+    const fnBody = source.slice(fnStart, fnEnd)
+
+    // Should copy hyperstache_templates as base partials
+    expect(fnBody).toContain('for k, v in pairs(hyperstache_templates)')
+    expect(fnBody).toContain('merged[k] = v')
+    // Should overlay explicit partials
+    expect(fnBody).toContain('if partials then')
+    expect(fnBody).toContain('for k, v in pairs(partials)')
+    // Should pass merged to lustache
+    expect(fnBody).toContain('lustache:render(template, data, merged)')
+  })
+
+  it('RenderTemplate handler parses JSON with data and partials', async () => {
+    const source = await generateRuntimeSource({ handlers: false })
+
+    const handlerStart = source.indexOf('"Hyperstache-RenderTemplate"')
+    const handlerEnd = source.indexOf('end\n  )', handlerStart)
+    const handlerBody = source.slice(handlerStart, handlerEnd)
+
+    // Should parse msg.Data as JSON
+    expect(handlerBody).toContain('json.decode')
+    // Should pass parsed.data and parsed.partials
+    expect(handlerBody).toContain('parsed.data or {}')
+    expect(handlerBody).toContain('parsed.partials')
+  })
+
+  it('Render handler passes partials from parsed JSON', async () => {
+    const source = await generateRuntimeSource({ handlers: false })
+
+    const handlerStart = source.indexOf('"Hyperstache-Render"')
+    const handlerEnd = source.indexOf('end\n  )', handlerStart)
+    const handlerBody = source.slice(handlerStart, handlerEnd)
+
+    // Should pass parsed.partials to render()
+    expect(handlerBody).toContain('parsed.partials')
   })
 })

@@ -514,6 +514,12 @@ local html = hs.renderTemplate('index.html', { title = 'Hello' })
 -- Render a raw template string
 local raw = hs.render('<h1>{{title}}</h1>', { title = 'Hello' })
 
+-- Render with partials (other templates included via {{>partial_name}})
+local html = hs.renderTemplate('index.html', { title = 'Hello' }, {
+  header = '<header>{{title}}</header>',
+  footer = '<footer>© 2025</footer>',
+})
+
 -- Add or update a template at runtime
 hs.set('banner.html', '<div class="banner">{{message}}</div>')
 
@@ -534,7 +540,8 @@ The runtime module:
 
 - **Seeds from build-time templates** — On first load, all bundled templates are copied into the runtime store. On redeployment, new bundled templates merge in without overwriting runtime modifications.
 - **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`
-- **Integrates with lustache** — `hs.renderTemplate(key, data)` looks up a template by key and renders it; `hs.render(template, data)` renders a raw template string directly.
+- **Integrates with lustache** — `hs.renderTemplate(key, data, partials)` looks up a template by key and renders it; `hs.render(template, data, partials)` renders a raw template string directly.
+- **Partials support** — Both render methods accept an optional third argument: a table of partials (keyed by name, values are template strings). All registered `hyperstache_templates` are automatically available as partials, so `{{>index.html}}` works in any template without extra setup. Explicit partials override same-named keys from the template store.
 
 ### AO Message Handlers
 
@@ -558,8 +565,8 @@ This registers nine handlers:
 |------------------------------|-------------------|-------------------------------------------------------------------|--------------|
 | `Hyperstache-Get`            | `Key`             | Returns raw template content                                      | Anyone       |
 | `Hyperstache-List`           |                   | Returns all template keys                                         | Anyone       |
-| `Hyperstache-RenderTemplate` | `Key`             | Renders a stored template by key with `msg.Data`                  | Anyone       |
-| `Hyperstache-Render`         |                   | Renders a raw template string (JSON `{ template, data }` payload) | Anyone       |
+| `Hyperstache-RenderTemplate` | `Key`             | Renders a stored template by key (JSON `{ data, partials }` payload) | Anyone       |
+| `Hyperstache-Render`         |                   | Renders a raw template string (JSON `{ template, data, partials }` payload) | Anyone       |
 | `Hyperstache-Set`            | `Key`             | Creates/updates a template                                        | Permitted    |
 | `Hyperstache-Remove`         | `Key`             | Deletes a template                                                | Permitted    |
 | `Hyperstache-Grant-Role` | `Address`, `Role` | Grants an ACL role to an address        | Owner/Admin  |
