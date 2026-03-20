@@ -37,8 +37,7 @@ An [AO](https://ao.arweave.net) Lua process built with [hyperstache](https://git
 
 \`\`\`bash
 npm install
-npx hyperstache rockspec
-luarocks make --only-deps --tree lua_modules *.rockspec
+npm run luarocks-install
 npx hyperstache build
 \`\`\`
 
@@ -190,6 +189,7 @@ function packageJson(name: string, flags: CreateFlags): string {
     scripts: {
       build: 'hyperstache build',
       dev: 'hyperstache dev',
+      'luarocks-install': 'hyperstache rockspec && luarocks make --only-deps --tree lua_modules *.rockspec',
       deploy: 'hyperstache deploy',
       publish: 'hyperstache publish',
     },
@@ -300,8 +300,7 @@ export function printNextSteps(name: string, projectDir?: string): void {
   console.log()
   console.log(`    cd ${cdTarget}`)
   console.log('    npm install')
-  console.log('    npx hyperstache rockspec')
-  console.log('    luarocks make --only-deps --tree lua_modules *.rockspec')
-  console.log('    npx hyperstache dev')
+  console.log('    npm run luarocks-install')
+  console.log('    npx hyperstache build')
   console.log()
 }

@@ -11,10 +11,11 @@ local _html = [==[
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hyperstache Admin</title>
+<script crossorigin type="module">globalThis.process={browser:!0,env:{}}</script>
 <script type="importmap">
 {
   "imports": {
-    "@permaweb/aoconnect": "/K45UpuInM8T0zvWSQbi-YPuh1LGGfC62DFCaXvRpdM"
+    "@permaweb/aoconnect": "/-K45UpuInM8T0zvWSQbi-YPuh1LGGfC62DFCaXvRpdM"
   }
 }
 </script>

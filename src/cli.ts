@@ -219,8 +219,11 @@ program
     for (const proc of targets) {
       try {
         const result = await deployProcess(proc, config.deploy, wallet, root)
-        console.log(`[${result.processName}] Spawned process: ${result.processId}`)
         console.log(`[${result.processName}] Module: ${result.moduleId}`)
+        console.log(`[${result.processName}] Spawned process: ${result.processId}`)
+        console.log(
+          `[${result.processName}] Link: ${config.deploy.hyperbeamUrl}/${result.processId}/now/serialize~json@1.0`
+        )
         updates[result.processName] = {
           processId: result.processId,
           moduleId: result.moduleId,
@@ -233,6 +236,9 @@ program
 
     await mergeManifest(root, updates)
     console.log('Deploy manifest updated.')
+
+    // NB: Known issue with @permaweb/aoconnect where it doesn't properly clear setInterval(), so we force exit
+    process.exit(0)
   })
 
 program.parse()

@@ -57,6 +57,14 @@ describe('createProject', () => {
       expect(pkg.scripts.dev).toBe('hyperstache dev')
     })
 
+    it('includes luarocks-install script', async () => {
+      await createProject('my-app', {}, tmp)
+      const pkg = JSON.parse(await readFile(join(tmp, 'my-app/package.json'), 'utf-8'))
+      expect(pkg.scripts['luarocks-install']).toBe(
+        'hyperstache rockspec && luarocks make --only-deps --tree lua_modules *.rockspec',
+      )
+    })
+
     it('config enables templates.vite', async () => {
       await createProject('my-app', {}, tmp)
       const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
@@ -248,6 +256,9 @@ describe('createProject', () => {
       }
       expect(logs.some(l => l.includes('cd my-app'))).toBe(true)
       expect(logs.some(l => l.includes('Created my-app/'))).toBe(true)
+      expect(logs.some(l => l.includes('npm run luarocks-install'))).toBe(true)
+      expect(logs.some(l => l.includes('npx hyperstache build'))).toBe(true)
+      expect(logs.some(l => l.includes('npx hyperstache dev'))).toBe(false)
     })
 
     it('uses relative path when projectDir is under cwd', () => {

@@ -110,8 +110,7 @@ All scaffolded projects include Vite template processing, CSS, and a dev server 
 Then install luarocks dependencies and build:
 
 ```bash
-npx hyperstache rockspec
-luarocks make --only-deps --tree lua_modules *.rockspec
+npm run luarocks-install
 npx hyperstache build
 ```
 
@@ -1290,6 +1289,12 @@ The `hyperstache rockspec` command generates a `.rockspec` file from the `luaroc
 ```bash
 npx hyperstache rockspec
 luarocks install --local --tree lua_modules my-app-0.1.0-1.rockspec
+```
+
+Scaffolded projects include a convenience npm script that combines both steps:
+
+```bash
+npm run luarocks-install
 ```
 
 The bundler then resolves from `lua_modules/` to inline those dependencies into the final bundle.

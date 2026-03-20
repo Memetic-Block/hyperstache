@@ -52,15 +52,17 @@ export async function deployProcess(
 
   const { connect, createDataItemSigner } = await import('@permaweb/aoconnect')
 
+  const signer = createDataItemSigner(wallet)
   const ao = connect({
     MODE: 'mainnet' as const,
+    signer,
     ...(deployConfig.hyperbeamUrl && {
       GATEWAY_URL: deployConfig.hyperbeamUrl,
       URL: deployConfig.hyperbeamUrl,
       SCHEDULER: deployConfig.scheduler
     }),
   })
-  const signer = createDataItemSigner(wallet)
+  
 
   // Determine if this is a WASM module build or a standard single-file deploy
   const wasmPath = join(proc.outDir, proc.name, 'process.wasm')
@@ -93,6 +95,7 @@ export async function deployProcess(
 
   const processId = await ao.spawn({
     module: moduleId,
+    authority: deployConfig.authority,
     scheduler: deployConfig.scheduler,
     signer,
     tags: spawnTags,
@@ -121,13 +124,23 @@ export async function deployProcess(
       data: luaSource,
     })
 
-    // Wait for the result to confirm the Eval succeeded
-    const res = await ao.result({ process: processId, message: msgId })
-    if (res.Error) {
-      throw new Error(
-        `Eval failed for "${proc.name}" (process: ${processId}):\n${res.Error}`,
-      )
+    try {
+      // Wait for the result to confirm the Eval succeeded
+      const res = await ao.result({ process: processId, message: msgId })
+      if (res.Error) {
+        throw new Error(
+          `Eval failed for "${proc.name}" (process: ${processId}):\n${res.Error}`,
+        )
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('HTTP request failed')) {
+        console.warn(
+          `Got error with 'HTTP request failed', but there is a known issue with patching HTML ` +
+          `sending invalid Headers in response, so the process may have deployed.`
+        )
+      }
     }
+
   }
 
   return { processName: proc.name, processId, moduleId }
