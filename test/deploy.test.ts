@@ -50,6 +50,7 @@ function makeProc(overrides: Partial<ResolvedProcessConfig> = {}): ResolvedProce
 
 const deployConfig: ResolvedDeployConfig = {
   scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
+  authority: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
   spawnTags: [],
   actionTags: [],
 }
@@ -180,17 +181,113 @@ describe('deployProcess', () => {
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
       hyperbeamUrl: 'https://hyperbeam.example.com',
+      scheduler: 'explicit-scheduler',
+      authority: 'explicit-authority',
     }
 
     await deployProcess(proc, customDeploy, wallet, tmp)
 
     expect(connect).toHaveBeenCalledWith(
       expect.objectContaining({
-        MODE: 'legacy',
-        CU_URL: 'https://hyperbeam.example.com',
-        MU_URL: 'https://hyperbeam.example.com',
         GATEWAY_URL: 'https://hyperbeam.example.com',
+        URL: 'https://hyperbeam.example.com',
+        SCHEDULER: 'explicit-scheduler',
       }),
     )
+  })
+
+  it('uses explicit authority in spawn tags', async () => {
+    const proc = makeProc()
+    await mkdir(join(tmp, 'dist'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+
+    const customDeploy: ResolvedDeployConfig = {
+      ...deployConfig,
+      authority: 'explicit-authority-addr',
+    }
+
+    await deployProcess(proc, customDeploy, wallet, tmp)
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: expect.arrayContaining([
+          { name: 'Authority', value: 'explicit-authority-addr' },
+        ]),
+      }),
+    )
+  })
+
+  it('uses scheduler as authority when authority matches scheduler', async () => {
+    const proc = makeProc()
+    await mkdir(join(tmp, 'dist'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+
+    const customDeploy: ResolvedDeployConfig = {
+      ...deployConfig,
+      scheduler: 'my-scheduler-addr',
+      authority: 'my-scheduler-addr',
+    }
+
+    await deployProcess(proc, customDeploy, wallet, tmp)
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: expect.arrayContaining([
+          { name: 'Authority', value: 'my-scheduler-addr' },
+        ]),
+      }),
+    )
+  })
+
+  it('fetches address from hyperbeam node when scheduler and authority are defaults', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('hyperbeam-wallet-address', { status: 200 }),
+    )
+
+    const proc = makeProc()
+    await mkdir(join(tmp, 'dist'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+
+    const customDeploy: ResolvedDeployConfig = {
+      ...deployConfig,
+      hyperbeamUrl: 'https://my-node.example.com',
+    }
+
+    await deployProcess(proc, customDeploy, wallet, tmp)
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://my-node.example.com/~meta@1.0/info/address',
+    )
+    expect(mockSpawn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scheduler: 'hyperbeam-wallet-address',
+        tags: expect.arrayContaining([
+          { name: 'Authority', value: 'hyperbeam-wallet-address' },
+        ]),
+      }),
+    )
+
+    mockFetch.mockRestore()
+  })
+
+  it('throws when hyperbeam address fetch fails', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('Not Found', { status: 404 }),
+    )
+
+    const proc = makeProc()
+    await mkdir(join(tmp, 'dist'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+
+    const customDeploy: ResolvedDeployConfig = {
+      ...deployConfig,
+      hyperbeamUrl: 'https://my-node.example.com',
+    }
+
+    await expect(
+      deployProcess(proc, customDeploy, wallet, tmp),
+    ).rejects.toThrow(/Failed to fetch HyperBEAM node address/)
+
+    mockFetch.mockRestore()
   })
 })

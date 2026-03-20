@@ -2,7 +2,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { JWK } from './wallet.js'
 import type { ResolvedProcessConfig, ResolvedDeployConfig } from '../config.js'
-import { AOS_MODULE_ID } from '../config.js'
+import { AOS_MODULE_ID, DEFAULT_SCHEDULER } from '../config.js'
 import type { ProcessManifestEntry } from './manifest.js'
 import { readManifest } from './manifest.js'
 
@@ -21,20 +21,43 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+async function resolveHyperbeamAddress(deployConfig: ResolvedDeployConfig): Promise<ResolvedDeployConfig> {
+  if (!deployConfig.hyperbeamUrl) return deployConfig
+  if (deployConfig.scheduler !== DEFAULT_SCHEDULER || deployConfig.authority !== DEFAULT_SCHEDULER) {
+    return deployConfig
+  }
+
+  const url = deployConfig.hyperbeamUrl.replace(/\/+$/, '') + '/~meta@1.0/info/address'
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch HyperBEAM node address from ${url} (HTTP ${res.status}).\n` +
+      `Set deploy.scheduler and deploy.authority explicitly, or check your hyperbeamUrl.`,
+    )
+  }
+  const address = (await res.text()).trim()
+  if (!address) {
+    throw new Error(`HyperBEAM node at ${url} returned an empty address.`)
+  }
+  return { ...deployConfig, scheduler: address, authority: address }
+}
+
 export async function deployProcess(
   proc: ResolvedProcessConfig,
   deployConfig: ResolvedDeployConfig,
   wallet: JWK,
   root: string,
 ): Promise<DeployResult> {
+  deployConfig = await resolveHyperbeamAddress(deployConfig)
+
   const { connect, createDataItemSigner } = await import('@permaweb/aoconnect')
 
   const ao = connect({
-    MODE: 'legacy' as const,
+    MODE: 'mainnet' as const,
     ...(deployConfig.hyperbeamUrl && {
-      CU_URL: deployConfig.hyperbeamUrl,
-      MU_URL: deployConfig.hyperbeamUrl,
       GATEWAY_URL: deployConfig.hyperbeamUrl,
+      URL: deployConfig.hyperbeamUrl,
+      SCHEDULER: deployConfig.scheduler
     }),
   })
   const signer = createDataItemSigner(wallet)
@@ -64,6 +87,7 @@ export async function deployProcess(
   // Spawn the process
   const spawnTags = [
     { name: 'Name', value: proc.name },
+    { name: 'Authority', value: deployConfig.authority },
     ...deployConfig.spawnTags,
   ]
 

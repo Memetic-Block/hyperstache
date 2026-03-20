@@ -112,6 +112,8 @@ export interface DeployConfig {
   wallet?: string
   /** Scheduler address for ao spawn (default: _GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA) */
   scheduler?: string
+  /** Authority address for the spawned process. Falls back to scheduler if absent. */
+  authority?: string
   /** Extra tags to include on spawn messages */
   spawnTags?: DeployTag[]
   /** Extra tags to include on Eval action messages */
@@ -198,15 +200,18 @@ export interface ResolvedDeployConfig {
   hyperbeamUrl?: string
   wallet?: string
   scheduler: string
+  authority: string
   spawnTags: DeployTag[]
   actionTags: DeployTag[]
 }
 
 export function resolveDeployConfig(raw?: DeployConfig): ResolvedDeployConfig {
+  const scheduler = raw?.scheduler ?? DEFAULT_SCHEDULER
   return {
     hyperbeamUrl: process.env.HYPERBEAM_URL || raw?.hyperbeamUrl || undefined,
     wallet: process.env.WALLET_PATH || raw?.wallet || undefined,
-    scheduler: raw?.scheduler ?? DEFAULT_SCHEDULER,
+    scheduler,
+    authority: raw?.authority ?? scheduler,
     spawnTags: raw?.spawnTags ?? [],
     actionTags: raw?.actionTags ?? [],
   }

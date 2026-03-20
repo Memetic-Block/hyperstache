@@ -894,6 +894,7 @@ export default defineConfig({
     wallet: './wallet.json',
     // hyperbeamUrl: 'https://your-hyperbeam-node.example',
     // scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
+    // authority: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
     // spawnTags: [{ name: 'App-Name', value: 'my-app' }],
     // actionTags: [{ name: 'X-Custom', value: 'value' }],
   },
@@ -908,8 +909,11 @@ export default defineConfig({
 | `wallet`       | `WALLET_PATH`   | Path to Arweave JWK wallet file                                | —       |
 | `hyperbeamUrl` | `HYPERBEAM_URL` | HyperBEAM node URL (sets CU, MU, and Gateway)                  | —       |
 | `scheduler`    |                 | Scheduler address for `ao.spawn()`                              | `_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA` |
+| `authority`    |                 | Authority address for spawned process                           | falls back to `scheduler` |
 | `spawnTags`    |                 | Extra `{ name, value }` tags included on spawn messages         | `[]`    |
 | `actionTags`   |                 | Extra `{ name, value }` tags included on Eval action messages   | `[]`    |
+
+When `hyperbeamUrl` is set and neither `scheduler` nor `authority` are provided, Hyperstache will automatically fetch the node's wallet address from `<hyperbeamUrl>/~meta@1.0/info/address` and use it for both values.
 
 Environment variables take precedence over config file values.
 
@@ -1138,6 +1142,7 @@ export default defineConfig({
     wallet: './wallet.json',    // Path to Arweave JWK wallet (or set WALLET_PATH env var)
     hyperbeamUrl: 'https://...', // HyperBEAM node URL (or set HYPERBEAM_URL env var)
     scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA', // Scheduler address
+    authority: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA', // Authority address (falls back to scheduler)
     spawnTags: [{ name: 'App-Name', value: 'my-app' }], // Extra spawn tags
     actionTags: [],             // Extra Eval action tags
   },
@@ -1257,6 +1262,8 @@ interface HyperstacheConfig {
     hyperbeamUrl?: string
     /** Scheduler address for ao.spawn() (default: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA') */
     scheduler?: string
+    /** Authority address for spawned process (falls back to scheduler) */
+    authority?: string
     /** Extra { name, value } tags included on spawn messages */
     spawnTags?: Array<{ name: string; value: string }>
     /** Extra { name, value } tags included on Eval action messages */
