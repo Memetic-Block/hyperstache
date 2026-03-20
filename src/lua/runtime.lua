@@ -36,12 +36,19 @@ function hyperstache.list()
   return keys
 end
 
-function hyperstache.render(key, data)
+function hyperstache.renderTemplate(key, data)
   local tmpl = hyperstache_templates[key]
   if not tmpl then
     error("template not found: " .. tostring(key))
   end
   return lustache:render(tmpl, data)
+end
+
+function hyperstache.render(template, data)
+  if type(template) ~= "string" then
+    error("expected string template, got " .. type(template))
+  end
+  return lustache:render(template, data)
 end
 
 function hyperstache.sync()
@@ -106,12 +113,30 @@ function hyperstache.handlers()
     end
   )
 
+  Handlers.add("Hyperstache-RenderTemplate",
+    Handlers.utils.hasMatchingTag("Action", "Hyperstache-RenderTemplate"),
+    function(msg)
+      local key = msg.Tags.Key or msg.Tags.key
+      local ok, result = pcall(hyperstache.renderTemplate, key, msg.Data or {})
+      if ok then
+        msg.reply({ Data = result })
+      else
+        msg.reply({ Data = "", Error = result })
+      end
+    end
+  )
+
   Handlers.add("Hyperstache-Render",
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Render"),
     function(msg)
-      local key = msg.Tags.Key or msg.Tags.key
-      local ok, result = pcall(hyperstache.render, key, msg.Data or {})
-      if ok then
+      local ok, parsed = pcall(json.decode, msg.Data or "{}")
+      if not ok then
+        msg.reply({ Data = "", Error = "invalid JSON: " .. tostring(parsed) })
+        return
+      end
+      local tmpl = parsed.template or ""
+      local ok2, result = pcall(hyperstache.render, tmpl, parsed.data or {})
+      if ok2 then
         msg.reply({ Data = result })
       else
         msg.reply({ Data = "", Error = result })

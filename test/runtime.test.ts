@@ -17,7 +17,8 @@ describe('generateRuntimeSource', () => {
     expect(source).toContain('function hyperstache.set(key, content)')
     expect(source).toContain('function hyperstache.remove(key)')
     expect(source).toContain('function hyperstache.list()')
-    expect(source).toContain('function hyperstache.render(key, data)')
+    expect(source).toContain('function hyperstache.renderTemplate(key, data)')
+    expect(source).toContain('function hyperstache.render(template, data)')
     expect(source).toContain('function hyperstache.sync()')
     expect(source).toContain('function hyperstache.handlers()')
 
@@ -26,6 +27,7 @@ describe('generateRuntimeSource', () => {
 
     // Should use lustache for rendering
     expect(source).toContain('lustache:render(tmpl, data)')
+    expect(source).toContain('lustache:render(template, data)')
   })
 
   it('merges bundled templates without overwriting existing keys', async () => {
@@ -68,6 +70,7 @@ describe('generateRuntimeSource', () => {
     expect(source).toContain('"Hyperstache-Set"')
     expect(source).toContain('"Hyperstache-Remove"')
     expect(source).toContain('"Hyperstache-List"')
+    expect(source).toContain('"Hyperstache-RenderTemplate"')
     expect(source).toContain('"Hyperstache-Render"')
   })
 

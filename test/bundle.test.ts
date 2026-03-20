@@ -79,7 +79,7 @@ describe('bundle integration', () => {
     expect(result.output).toContain('_modules["hyperstache"]')
     expect(result.output).toContain('hyperstache_templates')
     expect(result.output).toContain('function hyperstache.get(key)')
-    expect(result.output).toContain('function hyperstache.render(key, data)')
+    expect(result.output).toContain('function hyperstache.renderTemplate(key, data)')
 
     // Runtime module should appear after templates module
     const templatesIdx = result.output.indexOf('_modules["templates"]')

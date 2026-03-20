@@ -508,8 +508,11 @@ Hyperstache automatically bundles a `hyperstache` Lua runtime module into every 
 ```lua
 local hs = require('hyperstache')
 
--- Render a bundled template
-local html = hs.render('index.html', { title = 'Hello' })
+-- Render a bundled template by key
+local html = hs.renderTemplate('index.html', { title = 'Hello' })
+
+-- Render a raw template string
+local raw = hs.render('<h1>{{title}}</h1>', { title = 'Hello' })
 
 -- Add or update a template at runtime
 hs.set('banner.html', '<div class="banner">{{message}}</div>')
@@ -531,7 +534,7 @@ The runtime module:
 
 - **Seeds from build-time templates** — On first load, all bundled templates are copied into the runtime store. On redeployment, new bundled templates merge in without overwriting runtime modifications.
 - **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`
-- **Integrates with lustache** — `hs.render(key, data)` calls `lustache:render()` directly.
+- **Integrates with lustache** — `hs.renderTemplate(key, data)` looks up a template by key and renders it; `hs.render(template, data)` renders a raw template string directly.
 
 ### AO Message Handlers
 
@@ -549,15 +552,16 @@ export default defineConfig({
 })
 ```
 
-This registers eight handlers:
+This registers nine handlers:
 
-| Action                   | Tags              | Description                             | Access       |
-|--------------------------|-------------------|-----------------------------------------|--------------|
-| `Hyperstache-Get`        | `Key`             | Returns raw template content            | Anyone       |
-| `Hyperstache-List`       |                   | Returns all template keys               | Anyone       |
-| `Hyperstache-Render`     | `Key`             | Renders template with `msg.Data`        | Anyone       |
-| `Hyperstache-Set`        | `Key`             | Creates/updates a template              | Permitted    |
-| `Hyperstache-Remove`     | `Key`             | Deletes a template                      | Permitted    |
+| Action                       | Tags              | Description                                                       | Access       |
+|------------------------------|-------------------|-------------------------------------------------------------------|--------------|
+| `Hyperstache-Get`            | `Key`             | Returns raw template content                                      | Anyone       |
+| `Hyperstache-List`           |                   | Returns all template keys                                         | Anyone       |
+| `Hyperstache-RenderTemplate` | `Key`             | Renders a stored template by key with `msg.Data`                  | Anyone       |
+| `Hyperstache-Render`         |                   | Renders a raw template string (JSON `{ template, data }` payload) | Anyone       |
+| `Hyperstache-Set`            | `Key`             | Creates/updates a template                                        | Permitted    |
+| `Hyperstache-Remove`         | `Key`             | Deletes a template                                                | Permitted    |
 | `Hyperstache-Grant-Role` | `Address`, `Role` | Grants an ACL role to an address        | Owner/Admin  |
 | `Hyperstache-Revoke-Role`| `Address`, `Role` | Revokes an ACL role from an address     | Owner/Admin  |
 | `Hyperstache-Get-Roles`  | `Address`         | Returns roles for an address (or all)   | Anyone       |
@@ -568,7 +572,7 @@ You can also register handlers manually from your process code:
 
 ```lua
 local hs = require('hyperstache')
-hs.handlers()  -- registers all eight handlers
+hs.handlers()  -- registers all nine handlers
 ```
 
 ### Access Control (ACL)
