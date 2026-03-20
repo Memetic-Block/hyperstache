@@ -737,7 +737,7 @@ At build time, hyperstache:
 
 The admin Lua module:
 
-- **Reads the admin HTML from the templates table** — `require("templates")["admin/index.html"]`
+- **Reads the admin HTML from the hyperstache runtime** — `hyperstache.get("admin/index.html")`
 - **Publishes to `patch@1.0`** on process init and after every mutation (template Set/Remove, role Grant/Revoke)
 - **Stores the rendered HTML** in the `hyperstache_admin` global (auto-persisted by AO)
 

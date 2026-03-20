@@ -54,12 +54,11 @@ npx hyperstache dev
 
 function processLua(flags: CreateFlags): string {
   const adminLine = flags.admin ? `require('admin')\n` : ''
-  return `local templates = require('templates')
-local lustache = require('lustache')
+  return `local hyperstache = require('hyperstache')
 ${adminLine}
 Send({
   device = 'patch@1.0',
-  home = lustache:render(templates['index.html'], { title = 'Hello', name = Owner })
+  home = hyperstache.renderTemplate('index.html', { title = 'Hello', name = Owner })
 })
 `
 }

@@ -1,12 +1,11 @@
 local hyperstache = require("hyperstache")
-local templates = require("templates")
 
 local admin = {}
 
 local _path = "admin"
 
 function admin.render()
-  local html = templates["admin/index.html"]:gsub("__PROCESS_ID__", ao.id)
+  local html = hyperstache.get("admin/index.html"):gsub("__PROCESS_ID__", ao.id)
   hyperstache_admin = html
   return html
 end
