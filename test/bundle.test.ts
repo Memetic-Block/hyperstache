@@ -146,6 +146,11 @@ describe('bundle integration', () => {
     // Admin Lua should contain handler/publish logic
     expect(result.output).toContain('patch@1.0')
 
+    // Admin module should auto-call admin.handlers() on load
+    const adminModIdx = result.output.indexOf('_modules["admin"]')
+    const adminSection = result.output.slice(adminModIdx)
+    expect(adminSection).toContain('admin.handlers()')
+
     // Handlers should be forced on by adminInterface
     expect(result.output).toContain('hyperstache.handlers()')
   })

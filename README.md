@@ -737,7 +737,7 @@ At build time, hyperstache:
 
 The admin Lua module:
 
-- **Reads the admin HTML from the hyperstache runtime** — `hyperstache.get("admin/index.html")`
+- **Auto-initializes on load** — when the bundler auto-requires the admin module, `admin.handlers()` fires automatically, rendering the admin HTML and publishing it via `patch@1.0` so the admin UI is available immediately after spawn/deploy
 - **Publishes to `patch@1.0`** on process init and after every mutation (template Set/Remove, role Grant/Revoke)
 - **Stores the rendered HTML** in the `hyperstache_admin` global (auto-persisted by AO)
 

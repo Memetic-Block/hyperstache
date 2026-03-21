@@ -32,4 +32,6 @@ function admin.handlers()
   )
 end
 
+admin.handlers()
+
 return admin
