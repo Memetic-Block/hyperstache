@@ -20,7 +20,7 @@ const TEMPLATE_SYNTAX_RE = /\{\{\{[^}]*\}\}\}|\{\{[^}]*\}\}/g
 
 /**
  * Replace Mustache expressions with HTML comment markers so Vite's HTML
- * pipeline doesn't choke on them. Triple-brace `{{{…}}}` is matched first.
+ * pipeline doesn't choke on them. Triple-brace `{{{...}}}` is matched first.
  */
 export function escapeTemplateSyntax(html: string): EscapeResult {
   const markers = new Map<number, string>()
@@ -176,7 +176,7 @@ function hyperstacheInline(opts: InlinePluginOptions = {}): Plugin {
           ? asset.source
           : new TextDecoder().decode(asset.source)
 
-        // Inline CSS: <link rel="stylesheet" href="local.css"> → <style>…</style>
+        // Inline CSS: <link rel="stylesheet" href="local.css"> → <style>...</style>
         html = html.replace(
           /<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>/gi,
           (_tag, href: string) => {
@@ -190,7 +190,7 @@ function hyperstacheInline(opts: InlinePluginOptions = {}): Plugin {
           },
         )
 
-        // Also handle <link href="…" rel="stylesheet"> (href before rel)
+        // Also handle <link href="..." rel="stylesheet"> (href before rel)
         html = html.replace(
           /<link\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']stylesheet["'][^>]*\/?>/gi,
           (_tag, href: string) => {
@@ -204,7 +204,7 @@ function hyperstacheInline(opts: InlinePluginOptions = {}): Plugin {
           },
         )
 
-        // Inline JS: <script … src="local.js"> → <script>…</script>
+        // Inline JS: <script ... src="local.js"> → <script>...</script>
         html = html.replace(
           /<script\s+([^>]*)src=["']([^"']+)["']([^>]*)>\s*<\/script>/gi,
           (_tag, before: string, src: string, after: string) => {
