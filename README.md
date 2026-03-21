@@ -143,8 +143,7 @@ Write your Lua process:
 -- src/process.lua
 local hs = require('hyperstache')
 
-Send({
-  device = 'patch@1.0',
+hs.publish({
   home = hs.render(hs.get('index.html'), { greeting = 'Hello' })
 })
 ```
@@ -546,7 +545,7 @@ The runtime module:
 - **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`
 - **Integrates with lustache** — `hs.renderTemplate(key, data, partials)` looks up a template by key and renders it; `hs.render(template, data, partials)` renders a raw template string directly.
 - **Partials support** — Both render methods accept an optional third argument: a table of partials (keyed by name, values are template strings). All registered `hyperstache_templates` are automatically available as partials, so `{{>index.html}}` works in any template without extra setup. Explicit partials override same-named keys from the template store.
-- **Publish to patch@1.0** — `hs.publish(patches)` sends rendered content to `patch@1.0`, nesting the payload under the configured `patchKey` (default `"ui"`). This prevents raw HTML from appearing in message headers, which would otherwise break `@permaweb/aoconnect` methods. The JSON device lazylink-encodes the HTML within the nested key.
+- **Publish to patch@1.0** — `hs.publish(patches)` sends rendered content to `patch@1.0`, nesting the payload under the configured `patchKey` (default `"ui"`). This prevents raw HTML from appearing in message headers, which would otherwise break `@permaweb/aoconnect` methods. The JSON device lazylink-encodes the HTML within the nested key. Patches are accumulated in the persistent `hyperstache_patches` global — each call merges new keys and sends the full state, so no previously-published pages are lost. Use `hs.patch(patches)` to register content without sending (useful during init when multiple modules contribute pages before the first publish).
 
 ### AO Message Handlers
 
@@ -742,8 +741,8 @@ At build time, hyperstache:
 
 The admin Lua module:
 
-- **Auto-initializes on load** — when the bundler auto-requires the admin module, `admin.handlers()` fires automatically, rendering the admin HTML and publishing it via `patch@1.0` so the admin UI is available immediately after spawn/deploy
-- **Publishes to `patch@1.0`** on process init and after every mutation (template Set/Remove, role Grant/Revoke)
+- **Auto-initializes on load** — when the bundler auto-requires the admin module, `admin.handlers()` fires automatically, rendering the admin HTML and registering it via `hyperstache.patch()` (accumulate only, no Send). The user's `hyperstache.publish()` call in the entry point then sends the full state — including the admin page — in a single message.
+- **Publishes to `patch@1.0`** after every mutation (template Set/Remove, role Grant/Revoke) via `hyperstache.publish()`, which sends the full accumulated state
 - **Stores the rendered HTML** in the `hyperstache_admin` global (auto-persisted by AO)
 
 The admin UI has three sections:
@@ -756,7 +755,7 @@ The admin UI has three sections:
 
 #### Custom Path Key
 
-By default, the admin UI is published under the `admin` key inside the `patchKey` namespace (default `"ui"`) via `hyperstache.publish({ admin = html })`. To use a different path key, configure it in your config:
+By default, the admin UI is registered under the `admin` key inside the `patchKey` namespace (default `"ui"`) via `hyperstache.patch({ admin = html })` on init, and sent via `hyperstache.publish()` on mutations. To use a different path key, configure it in your config:
 
 ```ts
 export default defineConfig({

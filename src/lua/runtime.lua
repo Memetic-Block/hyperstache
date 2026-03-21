@@ -14,6 +14,10 @@ if not hyperstache_acl then
   hyperstache_acl = {}
 end
 
+if not hyperstache_patches then
+  hyperstache_patches = {}
+end
+
 local lustache = require("lustache")
 
 local hyperstache = {}
@@ -115,8 +119,19 @@ function hyperstache.get_roles(address)
   return hyperstache_acl
 end
 
+function hyperstache.patch(patches)
+  for k, v in pairs(patches) do
+    hyperstache_patches[k] = v
+  end
+end
+
 function hyperstache.publish(patches)
-  Send({ device = "patch@1.0", [_patch_key] = patches })
+  if patches then
+    for k, v in pairs(patches) do
+      hyperstache_patches[k] = v
+    end
+  end
+  Send({ device = "patch@1.0", [_patch_key] = hyperstache_patches })
 end
 
 function hyperstache.handlers()

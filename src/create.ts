@@ -56,8 +56,7 @@ function processLua(flags: CreateFlags): string {
   const adminLine = flags.admin ? `require('admin')\n` : ''
   return `local hyperstache = require('hyperstache')
 ${adminLine}
-Send({
-  device = 'patch@1.0',
+hyperstache.publish({
   home = hyperstache.renderTemplate('index.html', { title = 'Hello', name = Owner })
 })
 `

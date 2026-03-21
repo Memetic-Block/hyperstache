@@ -20,13 +20,14 @@ end
 
 function admin.handlers()
   admin.render()
-  admin.publish()
+  hyperstache.patch({ [_path] = hyperstache_admin })
 
   Handlers.append("Hyperstache-Admin-Sync-Set",
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Set"),
     function(msg)
       if hyperstache.has_permission(msg.From, "Hyperstache-Set") then
-        admin.publish()
+        admin.render()
+        hyperstache.publish({ [_path] = hyperstache_admin })
       end
     end
   )

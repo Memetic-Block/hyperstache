@@ -146,9 +146,10 @@ describe('bundle integration', () => {
     // Admin Lua should contain handler/publish logic
     expect(result.output).toContain('patch@1.0')
 
-    // Admin Lua should use hyperstache.publish() instead of raw Send to patch
+    // Admin Lua should use hyperstache.patch() on init (no Send) and publish() on mutations
     const adminModIdx = result.output.indexOf('_modules["admin"]')
     const adminSection = result.output.slice(adminModIdx)
+    expect(adminSection).toContain('hyperstache.patch(')
     expect(adminSection).toContain('hyperstache.publish(')
 
     // Admin module should auto-call admin.handlers() on load

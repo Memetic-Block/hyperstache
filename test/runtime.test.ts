@@ -265,7 +265,22 @@ describe('generateRuntimeSource', () => {
     expect(handlerBody).toContain('parsed.partials')
   })
 
-  it('exposes publish() method that sends to patch@1.0 under _patch_key', async () => {
+  it('exposes patch() that accumulates without sending', async () => {
+    const source = await generateRuntimeSource({ handlers: false, patchKey: 'ui' })
+
+    expect(source).toContain('function hyperstache.patch(patches)')
+
+    const fnStart = source.indexOf('function hyperstache.patch(')
+    const fnEnd = source.indexOf('\nend', fnStart)
+    const fnBody = source.slice(fnStart, fnEnd)
+
+    // Should merge into persistent state
+    expect(fnBody).toContain('hyperstache_patches[k] = v')
+    // Should NOT send
+    expect(fnBody).not.toContain('Send(')
+  })
+
+  it('exposes publish() that accumulates and sends full state to patch@1.0', async () => {
     const source = await generateRuntimeSource({ handlers: false, patchKey: 'ui' })
 
     expect(source).toContain('function hyperstache.publish(patches)')
@@ -274,9 +289,19 @@ describe('generateRuntimeSource', () => {
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
+    // Should optionally merge new patches
+    expect(fnBody).toContain('hyperstache_patches[k] = v')
+    // Should send full accumulated state
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_patch_key]')
-    expect(fnBody).toContain('patches')
+    expect(fnBody).toContain('hyperstache_patches')
+  })
+
+  it('initializes hyperstache_patches global with defensive pattern', async () => {
+    const source = await generateRuntimeSource({ handlers: false, patchKey: 'ui' })
+
+    expect(source).toContain('if not hyperstache_patches then')
+    expect(source).toContain('hyperstache_patches = {}')
   })
 
   it('uses default _patch_key = "ui"', async () => {

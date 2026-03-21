@@ -22,17 +22,19 @@ end
 
 function admin.handlers()
   admin.render()
-  admin.publish()
+  hyperstache.patch({ [_path] = hyperstache_admin })
 
   Handlers.append('Hyperstache-Grant-Role', 'Hyperstache-Grant-Role', function(msg)
     if hyperstache.has_permission(msg.From, 'admin') then
-      admin.publish()
+      admin.render()
+      hyperstache.publish({ [_path] = hyperstache_admin })
     end
   end)
 
   Handlers.append('Hyperstache-Revoke-Role', 'Hyperstache-Revoke-Role', function(msg)
     if hyperstache.has_permission(msg.From, 'admin') then
-      admin.publish()
+      admin.render()
+      hyperstache.publish({ [_path] = hyperstache_admin })
     end
   end)
 end
