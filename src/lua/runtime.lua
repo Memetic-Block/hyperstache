@@ -76,7 +76,6 @@ end
 local hyperstache = {}
 function hyperstache._sync_state()
   local state = {
-    templates = hyperstache_templates,
     template_keys = ''
   }
   for template_key, _ in pairs(hyperstache_templates) do
@@ -95,7 +94,11 @@ function hyperstache._sync_state()
     end
     state['acl_'..address] = role_list
   end
-  Send({ device = "patch@1.0", [_state_key] = state })
+  Send({
+    device = "patch@1.0",
+    [_state_key] = state,
+    hyperstache_templates = hyperstache_templates
+  })
 end
 
 hyperstache._sync_state()
