@@ -10,6 +10,12 @@ const ao = connect({
   SCHEDULER: window.AO_ENV.Process.Tags.Scheduler
 })
 
+const STATE_CACHE_TTL = 5_000;
+let _stateCache = null;
+let _stateCacheTime = 0;
+let _stateFlight = null;
+function invalidateStateCache() { _stateCache = null; _stateCacheTime = 0; }
+
 async function send(action, tags, data) {
   const t = [{ name: 'Action', value: action }];
   if (tags) Object.entries(tags).forEach(([k, v]) => t.push({ name: k, value: v }));
@@ -22,6 +28,7 @@ async function send(action, tags, data) {
   });
   const res = await ao.result({ process: PROCESS_ID, message: mid });
   console.log('send result', res);
+  invalidateStateCache();
   const out = res.Messages && res.Messages[0];
   if (out && out.Tags) {
     const errTag = out.Tags.find(t => t.name === 'Error');
@@ -30,17 +37,32 @@ async function send(action, tags, data) {
   return out ? out.Data : '';
 }
 
-async function fetchState() {
-  const res = await fetch(`${HB_URL}/${PROCESS_ID}/now/hyperstache_state/serialize~json@1.0`)
-  const state = await res.json();
-  console.log('got state', state)
-  return state
+async function fetchState({ force = false } = {}) {
+  if (!force && _stateCache && (Date.now() - _stateCacheTime < STATE_CACHE_TTL)) {
+    console.log('using cached state')
+    return _stateCache;
+  }
+  if (_stateFlight) return _stateFlight;
+  _stateFlight = fetch(`${HB_URL}/${PROCESS_ID}/now/hyperstache_state/serialize~json@1.0`)
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to fetch state: ' + res.statusText);
+      return res.json();
+    })
+    .then(state => {
+      _stateCache = state;
+      _stateCacheTime = Date.now();
+      console.log('got state', state)
+      return state;
+    })
+    .finally(() => { _stateFlight = null; });
+  return _stateFlight;
 }
 
 async function fetchTemplate(template_key) {
-  const res = await fetch(`${HB_URL}/${PROCESS_ID}/now/hyperstache_state/templates/${template_key}`)
+  const res = await fetch(`${HB_URL}/${PROCESS_ID}/now/hyperstache_templates/${template_key}`)
+  if (!res.ok) throw new Error('Failed to fetch template: ' + res.statusText);
   const template = await res.text();
-  console.log('got template', template.length, template.slice(0, 100))
+  console.log('got template', template_key, template.length)
   return template
 }
 
@@ -54,7 +76,6 @@ async function loadTemplates() {
   listEl.innerHTML = '<div class="list-empty">Loading...</div>';
   try {
     const state = await fetchState();
-    console.log('got state', state);
     const keys = state.template_keys ? state.template_keys.split(',').filter(Boolean) : [];
     if (!keys.length) { listEl.innerHTML = '<div class="list-empty">No templates</div>'; return; }
     listEl.innerHTML = keys.map(k =>
@@ -81,7 +102,7 @@ async function loadACL() {
     if (!addresses.length) { aclList.innerHTML = '<div class="list-empty">No roles assigned</div>'; return; }
     aclList.innerHTML = addresses.map(addr => {
       const roles = acl[addr].join(', ');
-      return '<div class="list-item"><span>' + addr + ' -> ' + roles + '</span>' +
+      return '<div class="list-item"><span>' + addr + ' : ' + roles + '</span>' +
         '<div class="actions"><button class="danger" data-revoke-addr="' + addr + '" data-revoke-roles="' + roles + '">Revoke</button></div></div>';
     }).join('');
   } catch (e) { aclList.innerHTML = '<div class="list-empty">Error: ' + e.message + '</div>'; }
@@ -113,17 +134,27 @@ const contentInput = document.getElementById('tpl-content');
 const editorStatus = document.getElementById('editor-status');
 
 listEl.addEventListener('click', async (e) => {
-  const edit = e.target.dataset.edit || e.target.closest('[data-key]')?.dataset.key;
+  const templateName = e.target.dataset.edit || e.target.closest('[data-key]')?.dataset.key;
   const del = e.target.dataset.del;
   if (del) {
     if (!confirm('Delete ' + del + '?')) return;
-    try { await send('Hyperstache-Remove', { Key: del }); } catch (err) { alert(err.message); }
-    loadTemplates(); loadPreviewKeys();
-  } else if (edit) {
-    keyInput.value = edit;
+    const delBtn = e.target;
     try {
-      contentInput.value = await fetchTemplate(edit);
-    } catch { contentInput.value = ''; }
+      delBtn.disabled = 'disabled';
+      delBtn.textContent = 'Deleting...';
+      await send('Hyperstache-Remove', { Key: del });
+      loadTemplates(); loadPreviewKeys();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      delBtn.disabled = false;
+      delBtn.textContent = 'Delete';
+    }
+  } else if (templateName) {
+    keyInput.value = templateName;
+    try {
+      contentInput.value = await fetchTemplate(templateName);
+    } catch (err) { console.error(err); contentInput.value = err.message; }
     editorEl.classList.remove('hidden'); editorStatus.className = 'hidden';
   }
 });
@@ -131,14 +162,29 @@ document.getElementById('btn-new').addEventListener('click', () => {
   keyInput.value = ''; contentInput.value = ''; editorEl.classList.remove('hidden');
   editorStatus.className = 'hidden'; keyInput.focus();
 });
-document.getElementById('btn-cancel').addEventListener('click', () => editorEl.classList.add('hidden'));
-document.getElementById('btn-save').addEventListener('click', async () => {
+const cancelButton = document.getElementById('btn-cancel')
+cancelButton.addEventListener('click', () => editorEl.classList.add('hidden'));
+document.getElementById('btn-save').addEventListener('click', async ({ target: saveButton }) => {
   const k = keyInput.value.trim();
   if (!k) { showStatus(editorStatus, 'Key is required', false); return; }
-  try { await send('Hyperstache-Set', { Key: k }, contentInput.value); showStatus(editorStatus, 'Saved', true); loadTemplates(); loadPreviewKeys(); }
-  catch (err) { showStatus(editorStatus, err.message, false); }
+  try {
+    saveButton.disabled = 'disabled';
+    cancelButton.disabled = 'disabled';
+    saveButton.textContent = 'Saving...';
+    await send('Hyperstache-Set', { Key: k }, contentInput.value);
+    showStatus(editorStatus, 'Saved', true);
+    await loadTemplates();
+    await loadPreviewKeys();
+  } catch (err) {
+    showStatus(editorStatus, err.message, false);
+  } finally {
+    saveButton.disabled = false;
+    cancelButton.disabled = false;
+    saveButton.textContent = 'Save';
+  }
 });
-document.getElementById('btn-refresh').addEventListener('click', loadTemplates);
+// TODO -> debounce this
+document.getElementById('btn-refresh').addEventListener('click', () => { invalidateStateCache(); loadTemplates(); });
 
 // --- ACL ---
 const aclList = document.getElementById('acl-list');
@@ -152,34 +198,65 @@ aclList.addEventListener('click', async (e) => {
   const roles = btn.dataset.revokeRoles.split(',');
   const role = roles.length === 1 ? roles[0] : prompt('Which role to revoke? (' + roles.join(', ') + ')');
   if (!role) return;
-  try { await send('Hyperstache-Revoke-Role', { Address: addr, Role: role.trim() }); loadACL(); }
-  catch (err) { alert(err.message); }
+  try {
+    btn.disabled = 'disabled';
+    btn.textContent = 'Revoking...';
+    await send('Hyperstache-Revoke-Role', { Address: addr, Role: role.trim() });
+    loadACL();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Revoke';
+  }
 });
+const grantSubmitButton = document.getElementById('btn-grant-submit');
+const grantCancelButton = document.getElementById('btn-grant-cancel');
 document.getElementById('btn-grant').addEventListener('click', () => { grantForm.classList.remove('hidden'); grantStatus.className = 'hidden'; });
-document.getElementById('btn-grant-cancel').addEventListener('click', () => grantForm.classList.add('hidden'));
-document.getElementById('btn-grant-submit').addEventListener('click', async () => {
+grantCancelButton.addEventListener('click', () => grantForm.classList.add('hidden'));
+grantSubmitButton.addEventListener('click', async () => {
   const addr = document.getElementById('grant-address').value.trim();
   const role = document.getElementById('grant-role').value.trim();
   if (!addr || !role) { showStatus(grantStatus, 'Address and role required', false); return; }
-  try { await send('Hyperstache-Grant-Role', { Address: addr, Role: role }); showStatus(grantStatus, 'Granted', true); loadACL(); }
-  catch (err) { showStatus(grantStatus, err.message, false); }
+  try {
+    grantSubmitButton.disabled = 'disabled';
+    grantCancelButton.disabled = 'disabled';
+    grantSubmitButton.textContent = 'Granting...';
+    await send('Hyperstache-Grant-Role', { Address: addr, Role: role });
+    showStatus(grantStatus, 'Granted', true);
+    loadACL();
+  } catch (err) {
+    showStatus(grantStatus, err.message, false);
+  } finally {
+    grantSubmitButton.disabled = false;
+    grantCancelButton.disabled = false;
+    grantSubmitButton.textContent = 'Grant';
+  }
 });
-document.getElementById('btn-acl-refresh').addEventListener('click', loadACL);
+document.getElementById('btn-acl-refresh').addEventListener('click', () => { invalidateStateCache(); loadACL(); });
 
 // --- Render Preview ---
 const previewKey = document.getElementById('preview-key');
 const previewData = document.getElementById('preview-data');
 const previewOutput = document.getElementById('preview-output');
 
-document.getElementById('btn-render').addEventListener('click', async () => {
+const renderButton = document.getElementById('btn-render');
+renderButton.addEventListener('click', async () => {
   const key = previewKey.value;
   if (!key) return;
   let data;
   try { data = JSON.parse(previewData.value); } catch { previewOutput.textContent = 'Invalid JSON'; return; }
   try {
+    renderButton.disabled = 'disabled';
+    renderButton.textContent = 'Rendering...';
     const html = await fetchState('Hyperstache-Render', { Key: key }, JSON.stringify(data));
     previewOutput.innerHTML = html;
-  } catch (err) { previewOutput.textContent = 'Error: ' + err.message; }
+  } catch (err) {
+    previewOutput.textContent = 'Error: ' + err.message;
+  } finally {
+    renderButton.disabled = false;
+    renderButton.textContent = 'Render';
+  }
 });
 
 // --- Init ---

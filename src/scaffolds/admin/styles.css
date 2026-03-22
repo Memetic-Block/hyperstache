@@ -8,6 +8,7 @@ h1 { font-size: 1.4rem; margin-bottom: 1rem; color: #58a6ff; }
 .panel { display: none; }
 .panel.active { display: block; }
 button { background: #238636; color: #fff; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+button:disabled { background: #484f58; cursor: not-allowed; }
 button:hover { background: #2ea043; }
 button.danger { background: #da3633; }
 button.danger:hover { background: #f85149; }
