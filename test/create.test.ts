@@ -206,13 +206,12 @@ describe('createProject', () => {
       expect(lua).toContain("require('admin')")
     })
 
-    it('admin init.lua auto-calls admin.handlers()', async () => {
+    it('admin init.lua renders and patches admin template', async () => {
       await createProject('my-app', { admin: true }, tmp)
       const lua = await readFile(join(tmp, 'my-app/src/admin/init.lua'), 'utf-8')
-      expect(lua).toContain('admin.handlers()')
-      // The auto-call should appear after the function definition, before return
-      const lastHandlers = lua.lastIndexOf('admin.handlers()')
-      expect(lua.indexOf('return admin')).toBeGreaterThan(lastHandlers)
+      expect(lua).toContain('admin.render()')
+      expect(lua).toContain('hyperstache.patch(')
+      expect(lua).toContain('return admin')
     })
 
     it('config does not include runtime block without admin flag', async () => {

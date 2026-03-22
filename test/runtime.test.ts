@@ -126,7 +126,7 @@ describe('generateRuntimeSource', () => {
     expect(fnBody).toContain('roles[action] == true')
   })
 
-  it('revoke cleans up empty ACL entries', async () => {
+  it('revoke removes role from ACL', async () => {
     const source = await generateRuntimeSource(defaults)
 
     const fnStart = source.indexOf('function hyperstache.revoke(')
@@ -134,8 +134,6 @@ describe('generateRuntimeSource', () => {
     const fnBody = source.slice(fnStart, fnEnd)
 
     expect(fnBody).toContain('hyperstache_acl[address][role] = nil')
-    expect(fnBody).toContain('next(hyperstache_acl[address]) == nil')
-    expect(fnBody).toContain('hyperstache_acl[address] = nil')
   })
 
   it('registers ACL handler endpoints', async () => {
@@ -333,12 +331,12 @@ describe('generateRuntimeSource', () => {
     expect(source).not.toContain('local _state_key = "hyperstache_state"')
   })
 
-  it('defines _sync_state helper that sends templates and acl under _state_key', async () => {
+  it('defines _sync_state method that sends templates and acl under _state_key', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('local function _sync_state()')
+    expect(source).toContain('function hyperstache._sync_state()')
 
-    const fnStart = source.indexOf('local function _sync_state()')
+    const fnStart = source.indexOf('function hyperstache._sync_state()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -348,13 +346,13 @@ describe('generateRuntimeSource', () => {
     expect(fnBody).toContain("state['acl_'..address]")
   })
 
-  it('calls _sync_state() at init after seeding templates and acl', async () => {
+  it('calls _sync_state() at init after module definition', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    // _sync_state() should be called at top level after the defensive init blocks
-    const patchesInit = source.indexOf('hyperstache_patches = {}')
+    // _sync_state() is a method, so it must be called after the module table is defined
     const moduleDef = source.indexOf('local hyperstache = {}')
-    const between = source.slice(patchesInit, moduleDef)
+    const firstFn = source.indexOf('function hyperstache.get(')
+    const between = source.slice(moduleDef, firstFn)
     expect(between).toContain('_sync_state()')
   })
 
