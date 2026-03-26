@@ -275,7 +275,7 @@ describe('generateRuntimeSource', () => {
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should merge into persistent state
-    expect(fnBody).toContain('hyperstache_patches[k] = v')
+    expect(fnBody).toContain('_deep_set(hyperstache_patches, k, v)')
     // Should NOT send
     expect(fnBody).not.toContain('Send(')
     expect(fnBody).not.toContain('_sync_state()')
@@ -291,7 +291,7 @@ describe('generateRuntimeSource', () => {
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should optionally merge new patches
-    expect(fnBody).toContain('hyperstache_patches[k] = v')
+    expect(fnBody).toContain('_deep_set(hyperstache_patches, k, v)')
     // Should send full accumulated state
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_patch_key]')
@@ -440,7 +440,7 @@ describe('generateRuntimeSource', () => {
     // Should render to get HTML
     expect(fnBody).toContain('hyperstache.renderTemplate(key,')
     // Should store in patches
-    expect(fnBody).toContain('hyperstache_patches[patchPath] = html')
+    expect(fnBody).toContain('_deep_set(hyperstache_patches, patchPath, html)')
     // Should send to patch device
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_patch_key]')
@@ -475,7 +475,7 @@ describe('generateRuntimeSource', () => {
     // Should remove from published registry
     expect(fnBody).toContain('hyperstache_published[patchPath] = nil')
     // Should remove from patches
-    expect(fnBody).toContain('hyperstache_patches[patchPath] = nil')
+    expect(fnBody).toContain('_deep_remove(hyperstache_patches, patchPath)')
     // Should send updated patches
     expect(fnBody).toContain('device = "patch@1.0"')
   })

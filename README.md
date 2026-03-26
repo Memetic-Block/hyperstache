@@ -761,7 +761,7 @@ export default defineConfig({
     vite: {
       esm: true,
       external: [
-        { name: '@permaweb/aoconnect', url: 'ar://-K45UpuInM8T0zvWSQbi-YPuh1LGGfC62DFCaXvRpdM' },
+        { name: '@permaweb/aoconnect', url: 'ar://g2XHqQZLuyssd0_DRMB-cx1BC-TUPTHI1n8nwfFKHM0' },
       ],
     },
   },

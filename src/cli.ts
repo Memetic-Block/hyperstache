@@ -243,7 +243,7 @@ program
           moduleId: result.moduleId,
         }
       } catch (err: unknown) {
-        console.error(`[${proc.name}] ${(err as Error).message}`)
+        console.error(`[${proc.name}]`, err)
         process.exit(1)
       }
     }

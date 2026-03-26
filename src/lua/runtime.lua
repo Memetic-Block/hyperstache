@@ -93,6 +93,68 @@ local function _find_partial_refs(content)
   return refs
 end
 
+--- Set a value in a nested table by splitting `path` on `/`.
+--- For example, `_deep_set(t, "a/b/c", v)` produces `t.a.b.c = v`,
+--- creating intermediate tables as needed.
+---@private
+---@param tbl table Root table to write into
+---@param path string Slash-delimited path (e.g. `"admin/index.html"`)
+---@param value any Value to store at the leaf
+local function _deep_set(tbl, path, value)
+  local segments = {}
+  for seg in path:gmatch("[^/]+") do
+    segments[#segments + 1] = seg
+  end
+  if #segments == 0 then return end
+  local current = tbl
+  for i = 1, #segments - 1 do
+    if type(current[segments[i]]) ~= "table" then
+      current[segments[i]] = {}
+    end
+    current = current[segments[i]]
+  end
+  current[segments[#segments]] = value
+end
+
+--- Remove a leaf value from a nested table by splitting `path` on `/`.
+---@private
+---@param tbl table Root table to remove from
+---@param path string Slash-delimited path
+local function _deep_remove(tbl, path)
+  local segments = {}
+  for seg in path:gmatch("[^/]+") do
+    segments[#segments + 1] = seg
+  end
+  if #segments == 0 then return end
+  local current = tbl
+  for i = 1, #segments - 1 do
+    if type(current[segments[i]]) ~= "table" then return end
+    current = current[segments[i]]
+  end
+  current[segments[#segments]] = nil
+end
+
+local function _deep_copy(orig, copies)
+  copies = copies or {}
+  local orig_type = type(orig)
+  local copy
+  if orig_type == 'table' then
+    if copies[orig] then
+      copy = copies[orig]
+    else
+      copy = {}
+      copies[orig] = copy
+      for orig_key, orig_value in next, orig, nil do
+        copy[_deep_copy(orig_key, copies)] = _deep_copy(orig_value, copies)
+      end
+      setmetatable(copy, _deep_copy(getmetatable(orig), copies))
+    end
+  else -- number, string, boolean, etc
+    copy = orig
+  end
+  return copy
+end
+
 --- Recursively check whether `template_key` depends on `changed_key` via partial references.
 --- Performs a depth-first traversal through the partial dependency graph with cycle detection.
 ---@private
@@ -124,16 +186,16 @@ end
 ---@param changed_key string The template key that was modified
 local function _auto_rerender(changed_key)
   local any_changed = false
-  for patchPath, reg in pairs(hyperstache_published) do
-    if reg.key == changed_key or _depends_on(reg.key, changed_key) then
-      local data = reg.data
-      if type(reg.dataFn) == "function" then
-        local ok, result = pcall(reg.dataFn)
+  for patchPath, published in pairs(hyperstache_published) do
+    if published.template_key == changed_key or _depends_on(published.template_key, changed_key) then
+      local data = published.data
+      if type(published.dataFn) == "function" then
+        local ok, result = pcall(published.dataFn)
         if ok then data = result end
       end
-      local ok, html = pcall(lustache.render, lustache, hyperstache_templates[reg.key] or "", data or {}, hyperstache_templates)
+      local ok, html = pcall(lustache.render, lustache, hyperstache_templates[published.template_key] or "", data or {}, hyperstache_templates)
       if ok then
-        hyperstache_patches[patchPath] = html
+        _deep_set(hyperstache_patches, patchPath, html)
         any_changed = true
       end
     end
@@ -152,18 +214,19 @@ function hyperstache.get_state()
   local state = {
     templates = {},
     published = {},
-    acl = hyperstache_acl
+    acl = hyperstache_acl,
+    ui_root = _patch_key
   }
   for template_key, _ in pairs(hyperstache_templates) do
     table.insert(state.templates, template_key)
   end
-  for patchPath, reg in pairs(hyperstache_published) do
+  for patchPath, published in pairs(hyperstache_published) do
     table.insert(state.published, {
       path = patchPath,
-      template_name = reg.key,
-      partials = reg.partials,
-      statePath = reg.statePath,
-      re_render_on_state_change = type(reg.dataFn) == "function" or type(reg.data) == "table"
+      template_name = published.template_key,
+      partials = published.partials,
+      statePath = published.statePath,
+      re_render_on_state_change = type(published.dataFn) == "function" or type(published.data) == "table"
     })
   end
 
@@ -173,10 +236,14 @@ end
 --- Sync current templates, ACL, and published state to `patch@1.0`.
 --- Triggers an auto-rerender of the admin interface and sends all
 --- accumulated patches, state, templates, and published registry in a single message.
----@private
-function hyperstache._sync_state()
+function hyperstache.sync()
   local hyperstache_state = hyperstache.get_state()
-  _auto_rerender('admin/index.html')
+  -- _auto_rerender('admin/index.html')
+
+  for _, published in pairs(hyperstache_published) do
+    hyperstache.republishTemplate(published.template_key)
+  end
+
   Send({
     device = "patch@1.0",
     [_patch_key] = hyperstache_patches,
@@ -185,6 +252,13 @@ function hyperstache._sync_state()
     hyperstache_published = hyperstache_published
   })
 end
+
+-- function hyperstache.sync_rerender()
+--   Send({
+--     device = "patch@1.0",
+--     [_patch_key] = hyperstache_patches
+--   })
+-- end
 
 --- Retrieve template content by key.
 ---@param key string Template key (e.g. `"index.html"`)
@@ -200,8 +274,8 @@ end
 ---@param content string Template content (Mustache syntax)
 function hyperstache.set(key, content)
   hyperstache_templates[key] = content
-  hyperstache._sync_state()
-  _auto_rerender(key)
+  hyperstache.sync()
+  -- _auto_rerender(key)
 end
 
 --- Delete a template and clean up any published entries that reference it.
@@ -210,14 +284,14 @@ end
 ---@param key string Template key to remove
 function hyperstache.remove(key)
   hyperstache_templates[key] = nil
-  for patchPath, reg in pairs(hyperstache_published) do
-    if reg.key == key then
+  for patchPath, published in pairs(hyperstache_published) do
+    if published.template_key == key then
       hyperstache_published[patchPath] = nil
-      hyperstache_patches[patchPath] = nil
+      _deep_remove(hyperstache_patches, patchPath)
     end
   end
-  hyperstache._sync_state()
-  _auto_rerender(key)
+  hyperstache.sync()
+  -- _auto_rerender(key)
 end
 
 --- Return an array of all stored template keys.
@@ -233,26 +307,16 @@ end
 --- Render a stored template by key with optional data and partials.
 --- All stored templates are automatically available as partials. Explicit
 --- partials override stored templates with the same key.
----@param key string Template key to render
+---@param template_key string Template key to render
 ---@param data? table Data context for Mustache rendering
 ---@param partials? TemplateMap Additional partials to merge (override stored templates)
 ---@return string html Rendered HTML output
 ---@error Throws if the template key is not found
-function hyperstache.renderTemplate(key, data, partials)
-  local tmpl = hyperstache_templates[key]
-  if not tmpl then
-    error("template not found: " .. tostring(key))
-  end
-  local merged = {}
-  for k, v in pairs(hyperstache_templates) do
-    merged[k] = v
-  end
-  if partials then
-    for k, v in pairs(partials) do
-      merged[k] = v
-    end
-  end
-  return lustache:render(tmpl, data, merged)
+function hyperstache.renderTemplate(template_key, data, partials)
+  local tmpl = hyperstache_templates[template_key]
+  assert(type(tmpl) == "string", "template not found: " .. tostring(template_key))
+  lustache.renderer:clear_cache()
+  return lustache:render(tmpl, data, partials)
 end
 
 --- Render a raw Mustache template string with optional data and partials.
@@ -264,44 +328,9 @@ end
 ---@return string html Rendered HTML output
 ---@error Throws if `template` is not a string
 function hyperstache.render(template, data, partials)
-  if type(template) ~= "string" then
-    error("expected string template, got " .. type(template))
-  end
-  local merged = {}
-  for k, v in pairs(hyperstache_templates) do
-    merged[k] = v
-  end
-  if partials then
-    for k, v in pairs(partials) do
-      merged[k] = v
-    end
-  end
-  return lustache:render(template, data, merged)
-end
-
---- Force-reload all bundled templates, overwriting any runtime modifications.
---- Syncs state and re-renders all published templates with fresh content.
-function hyperstache.sync()
-  for k, v in pairs(_bundled) do
-    hyperstache_templates[k] = v
-  end
-  hyperstache._sync_state()
-  local any_changed = false
-  for patchPath, reg in pairs(hyperstache_published) do
-    local data = reg.data
-    if type(reg.dataFn) == "function" then
-      local ok, result = pcall(reg.dataFn)
-      if ok then data = result end
-    end
-    local ok, html = pcall(lustache.render, lustache, hyperstache_templates[reg.key] or "", data or {}, hyperstache_templates)
-    if ok then
-      hyperstache_patches[patchPath] = html
-      any_changed = true
-    end
-  end
-  if any_changed then
-    Send({ device = "patch@1.0", [_patch_key] = hyperstache_patches })
-  end
+  assert(type(template) == "string", "expected string template, got " .. type(template))
+  lustache.renderer:clear_cache()
+  return lustache:render(template, data, partials)
 end
 
 --- Check whether an address has permission to perform an action.
@@ -335,7 +364,7 @@ function hyperstache.grant(address, role)
     hyperstache_acl[address] = {}
   end
   hyperstache_acl[address][role] = true
-  hyperstache._sync_state()
+  hyperstache.sync()
 end
 
 --- Revoke a role from an address.
@@ -347,7 +376,7 @@ function hyperstache.revoke(address, role)
     return
   end
   hyperstache_acl[address][role] = nil
-  hyperstache._sync_state()
+  hyperstache.sync()
 end
 
 --- Get roles for a specific address, or the entire ACL if no address is given.
@@ -364,10 +393,10 @@ end
 ---@return table<string, { key: string, statePath: string? }> published Map of patch path to published template info
 function hyperstache.listPublished()
   local result = {}
-  for patchPath, reg in pairs(hyperstache_published) do
+  for patchPath, published in pairs(hyperstache_published) do
     result[patchPath] = {
-      key = reg.key,
-      statePath = reg.statePath
+      template_key = published.template_key,
+      statePath = published.statePath
     }
   end
   return result
@@ -394,17 +423,26 @@ function hyperstache.publishTemplate(template_key, ui_path, data, partials, stat
     dataFn = data
     renderData = data()
   end
-  local html = hyperstache.renderTemplate(template_key, renderData or {}, partials)
+  local partialsCopy = _deep_copy(partials)
+  local html = hyperstache.renderTemplate(template_key, renderData or {}, partialsCopy)
   hyperstache_published[ui_path] = {
-    key = template_key,
+    template_key = template_key,
     data = (type(data) ~= "function") and data or nil,
     dataFn = dataFn,
-    partials = partials,
+    partials = partialsCopy,
     statePath = statePath
   }
-  hyperstache_patches[ui_path] = html
-  hyperstache._sync_state()
+  _deep_set(hyperstache_patches, ui_path, html)
+
   return html
+end
+
+function hyperstache.republishTemplate(template_key)
+  for patchPath, published in pairs(hyperstache_published) do
+    if published.template_key == template_key then
+      hyperstache.publishTemplate(published.template_key, patchPath, published.dataFn or published.data, published.partials, published.statePath)
+    end
+  end
 end
 
 --- Stop publishing a template at the given patch path.
@@ -412,7 +450,7 @@ end
 ---@param patchPath string The patch path to unpublish
 function hyperstache.unpublishTemplate(patchPath)
   hyperstache_published[patchPath] = nil
-  hyperstache_patches[patchPath] = nil
+  _deep_remove(hyperstache_patches, patchPath)
   Send({ device = "patch@1.0", [_patch_key] = hyperstache_patches })
 end
 
@@ -421,7 +459,7 @@ end
 ---@param patches PatchMap Patch path to HTML content mapping
 function hyperstache.patch(patches)
   for k, v in pairs(patches) do
-    hyperstache_patches[k] = v
+    _deep_set(hyperstache_patches, k, v)
   end
 end
 
@@ -431,7 +469,7 @@ end
 function hyperstache.publish(patches)
   if patches then
     for k, v in pairs(patches) do
-      hyperstache_patches[k] = v
+      _deep_set(hyperstache_patches, k, v)
     end
   end
   Send({ device = "patch@1.0", [_patch_key] = hyperstache_patches })
@@ -461,8 +499,8 @@ function hyperstache.handlers()
   Handlers.add("Hyperstache-Get",
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Get"),
     function(msg)
-      local key = msg.Tags.Key or msg.Tags.key
-      local tmpl = hyperstache.get(key)
+      local template_key = msg.Tags['Template-Key']
+      local tmpl = hyperstache.get(template_key)
       Send({ Target = msg.From, Action = 'Hyperstache-Get-Response', Data = tmpl or "" })
     end
   )
@@ -478,13 +516,13 @@ function hyperstache.handlers()
   Handlers.add("Hyperstache-RenderTemplate",
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-RenderTemplate"),
     function(msg)
-      local key = msg.Tags.Key or msg.Tags.key
+      local template_key = msg.Tags['Template-Key']
       local ok, parsed = pcall(json.decode, msg.Data or "{}")
       if not ok then
         Send({ Target = msg.From, Action = 'Hyperstache-RenderTemplate-Response', Data = "", Error = "invalid JSON: " .. tostring(parsed) })
         return
       end
-      local ok2, result = pcall(hyperstache.renderTemplate, key, parsed.data or {}, parsed.partials)
+      local ok2, result = pcall(hyperstache.renderTemplate, template_key, parsed.data or {}, parsed.partials)
       if ok2 then
         Send({ Target = msg.From, Action = 'Hyperstache-RenderTemplate-Response', Data = result })
       else
@@ -515,8 +553,9 @@ function hyperstache.handlers()
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Set"),
     function(msg)
       assert(hyperstache.has_permission(msg.From, "Hyperstache-Set"), "not authorized to set templates")
-      local key = msg.Tags.Key or msg.Tags.key
-      hyperstache.set(key, msg.Data)
+      local template_key = msg.Tags['Template-Key']
+      assert(type(template_key) == "string" and template_key ~= "", "Template-Key tag is required and must be a non-empty string")
+      hyperstache.set(template_key, msg.Data)
       Send({ Target = msg.From, Action = 'Hyperstache-Set-Response', Data = 'OK' })
     end
   )
@@ -525,8 +564,8 @@ function hyperstache.handlers()
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Remove"),
     function(msg)
       assert(hyperstache.has_permission(msg.From, "Hyperstache-Remove"), "not authorized to remove templates")
-      local key = msg.Tags.Key or msg.Tags.key
-      hyperstache.remove(key)
+      local template_key = msg.Tags['Template-Key']
+      hyperstache.remove(template_key)
       Send({ Target = msg.From, Action = 'Hyperstache-Remove-Response', Data = 'OK' })
     end
   )
@@ -592,9 +631,9 @@ function hyperstache.handlers()
     Handlers.utils.hasMatchingTag("Action", "Hyperstache-Publish-Template"),
     function(msg)
       assert(hyperstache.has_permission(msg.From, "Hyperstache-Publish-Template"), "not authorized to publish templates")
-      local template_name = msg.Tags['Template-Name']
+      local template_key = msg.Tags['Template-Key']
       local publish_path = msg.Tags['Publish-Path']
-      assert(template_name, "Template-Name tag is required, got: " .. tostring(template_name))
+      assert(template_key, "Template-Key tag is required, got: " .. tostring(template_key))
       assert(publish_path, "Publish-Path tag is required, got: " .. tostring(publish_path))
       local statePath = msg.Tags["State-Path"] or msg.Tags["state-path"]
       local data = {}
@@ -611,8 +650,9 @@ function hyperstache.handlers()
           data = parsed
         end
       end
-      local ok, result = pcall(hyperstache.publishTemplate, template_name, publish_path, data, nil, statePath)
+      local ok, result = pcall(hyperstache.publishTemplate, template_key, publish_path, data, nil, statePath)
       if ok then
+        hyperstache.sync()
         Send({ Target = msg.From, Action = 'Hyperstache-Publish-Template-Response', Data = 'OK' })
       else
         Send({ Target = msg.From, Action = 'Hyperstache-Publish-Template-Response', Data = "", Error = tostring(result) })
@@ -641,7 +681,7 @@ function hyperstache.handlers()
 end
 
 if not hyperstache_initialized then
-  hyperstache._sync_state()
+  hyperstache.sync()
   hyperstache_initialized = true
 end
 
