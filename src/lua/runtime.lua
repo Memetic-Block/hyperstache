@@ -667,6 +667,7 @@ function hyperstache.handlers()
       local path = msg.Tags.Path or msg.Tags.path
       assert(path, "Path tag is required, got: " .. tostring(path))
       hyperstache.unpublishTemplate(path)
+      hyperstache.sync()
       Send({ Target = msg.From, Action = 'Hyperstache-Unpublish-Template-Response', Data = 'OK' })
     end
   )
