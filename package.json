@@ -1,5 +1,5 @@
 {
-  "name": "@memetic-block/hyperstache",
+  "name": "@memetic-block/hyperengine",
   "version": "0.0.1",
   "description": "Framework for bundling AO Lua processes with Mustache templating and optional Luarocks support",
   "type": "module",
@@ -12,7 +12,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "hyperstache": "./dist/cli.js"
+    "hyperengine": "./dist/cli.js"
   },
   "files": [
     "dist",

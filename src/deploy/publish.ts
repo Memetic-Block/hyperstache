@@ -69,7 +69,7 @@ export async function publishProcess(
   logger.verbose(`Checking for Lua artifact: ${luaPath}`)
   if (!(await fileExists(luaPath))) {
     throw new Error(
-      `No build artifact found for "${proc.name}". Run \`hyperstache build\` first.\n` +
+      `No build artifact found for "${proc.name}". Run \`hyperengine build\` first.\n` +
       `  Looked for: ${wasmPath}\n` +
       `  Looked for: ${luaPath}`,
     )

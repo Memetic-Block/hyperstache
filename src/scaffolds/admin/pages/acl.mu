@@ -1,6 +1,6 @@
 <div id="acl">
   <div id="acl-list" class="list">
-    {{#hyperstache_acl}}
+    {{#hyperengine_acl}}
     {{#roles}}
     <div class="list-item">
       <span class="address">{{address}}</span><span class="arrow">&rarr;</span><span class="acl-role">{{.}}</span>
@@ -12,10 +12,10 @@
       </div>
     </div>
     {{/roles}}
-    {{/hyperstache_acl}}
-    {{^hyperstache_acl}}
+    {{/hyperengine_acl}}
+    {{^hyperengine_acl}}
     <div class="list-empty">No roles assigned</div>
-    {{/hyperstache_acl}}
+    {{/hyperengine_acl}}
   </div>
   <div id="grant-form">
     <div id="grant-status"></div>
@@ -25,7 +25,7 @@
     </div>
     <div class="field">
       <label for="grant-role">Role</label>
-      <input id="grant-role" placeholder="e.g. admin, Hyperstache-Set">
+      <input id="grant-role" placeholder="e.g. admin, Hyperengine-Set">
     </div>
     <div class="actions">
       <button id="btn-grant-submit" class="action-button" onclick="onGrantRoleClicked()">Grant</button>

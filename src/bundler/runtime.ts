@@ -8,7 +8,7 @@ export interface RuntimeOptions {
   handlers: boolean
   /** Top-level key for patch@1.0 publishing (default: "ui") */
   patchKey: string
-  /** Key under which hyperstache_templates and hyperstache_acl are synced to patch@1.0 (default: "hyperstache_state") */
+  /** Key under which hyperengine_templates and hyperengine_acl are synced to patch@1.0 (default: "hyperengine_state") */
   stateKey: string
 }
 
@@ -32,7 +32,7 @@ function luaPath(name: string): string {
 }
 
 /**
- * Generate the Lua source for the `hyperstache` runtime module.
+ * Generate the Lua source for the `hyperengine` runtime module.
  *
  * Reads the Lua source from `src/lua/runtime.lua` and optionally
  * appends the auto-handler registration snippet.
@@ -40,7 +40,7 @@ function luaPath(name: string): string {
  * The module provides CRUD operations and lustache rendering for templates
  * at runtime inside a deployed AO process.
  *
- * - Persists state in the lowercase global `hyperstache_templates` (AO
+ * - Persists state in the lowercase global `hyperengine_templates` (AO
  *   auto-persists lowercase globals across process reloads).
  * - Seeds from the bundled `templates` module on first load, merging
  *   without overwriting existing (runtime-modified) keys.
@@ -57,15 +57,15 @@ export async function generateRuntimeSource(options: RuntimeOptions): Promise<st
 
   // Inject the configured state key
   source = source.replace(
-    'local _state_key = "hyperstache_state"',
+    'local _state_key = "hyperengine_state"',
     `local _state_key = "${options.stateKey}"`,
   )
 
   if (options.handlers) {
-    // Insert the auto-call just before the final `return hyperstache`
+    // Insert the auto-call just before the final `return hyperengine`
     source = source.replace(
-      /\nreturn hyperstache\s*$/,
-      '\nhyperstache.handlers()\n\nreturn hyperstache\n',
+      /\nreturn hyperengine\s*$/,
+      '\nhyperengine.handlers()\n\nreturn hyperengine\n',
     )
   }
 

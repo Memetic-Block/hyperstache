@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { generateRuntimeSource, generateLustacheModules } from '../src/bundler/runtime.js'
 
-const defaults = { handlers: false, patchKey: 'ui', stateKey: 'hyperstache_state' }
+const defaults = { handlers: false, patchKey: 'ui', stateKey: 'hyperengine_state' }
 
 describe('generateRuntimeSource', () => {
   it('generates Lua source with all API functions', async () => {
@@ -9,23 +9,23 @@ describe('generateRuntimeSource', () => {
 
     // Should seed from bundled templates
     expect(source).toContain('require("templates")')
-    expect(source).toContain('hyperstache_templates')
+    expect(source).toContain('hyperengine_templates')
 
     // Should declare the module table
-    expect(source).toContain('local hyperstache = {}')
+    expect(source).toContain('local hyperengine = {}')
 
     // Should expose CRUD API
-    expect(source).toContain('function hyperstache.get(key)')
-    expect(source).toContain('function hyperstache.set(key, content)')
-    expect(source).toContain('function hyperstache.remove(key)')
-    expect(source).toContain('function hyperstache.list()')
-    expect(source).toContain('function hyperstache.renderTemplate(key, data, partials)')
-    expect(source).toContain('function hyperstache.render(template, data, partials)')
-    expect(source).toContain('function hyperstache.sync()')
-    expect(source).toContain('function hyperstache.handlers()')
+    expect(source).toContain('function hyperengine.get(key)')
+    expect(source).toContain('function hyperengine.set(key, content)')
+    expect(source).toContain('function hyperengine.remove(key)')
+    expect(source).toContain('function hyperengine.list()')
+    expect(source).toContain('function hyperengine.renderTemplate(key, data, partials)')
+    expect(source).toContain('function hyperengine.render(template, data, partials)')
+    expect(source).toContain('function hyperengine.sync()')
+    expect(source).toContain('function hyperengine.handlers()')
 
     // Should return the module
-    expect(source).toContain('return hyperstache')
+    expect(source).toContain('return hyperengine')
 
     // Should use lustache for rendering with partials
     expect(source).toContain('lustache:render(tmpl, data, merged)')
@@ -36,20 +36,20 @@ describe('generateRuntimeSource', () => {
     const source = await generateRuntimeSource(defaults)
 
     // Should check for nil before setting
-    expect(source).toContain('if hyperstache_templates[k] == nil then')
-    expect(source).toContain('hyperstache_templates[k] = v')
+    expect(source).toContain('if hyperengine_templates[k] == nil then')
+    expect(source).toContain('hyperengine_templates[k] = v')
   })
 
   it('does not auto-register handlers when handlers is false', async () => {
     const source = await generateRuntimeSource(defaults)
 
     // The handlers() function definition should exist
-    expect(source).toContain('function hyperstache.handlers()')
+    expect(source).toContain('function hyperengine.handlers()')
 
     // But it should NOT be called automatically
     const lines = source.split('\n')
     const handlerCalls = lines.filter(
-      (l) => l.trim() === 'hyperstache.handlers()',
+      (l) => l.trim() === 'hyperengine.handlers()',
     )
     expect(handlerCalls).toHaveLength(0)
   })
@@ -57,10 +57,10 @@ describe('generateRuntimeSource', () => {
   it('auto-registers handlers when handlers is true', async () => {
     const source = await generateRuntimeSource({ ...defaults, handlers: true })
 
-    // Should have an auto-call to hyperstache.handlers()
+    // Should have an auto-call to hyperengine.handlers()
     const lines = source.split('\n')
     const handlerCalls = lines.filter(
-      (l) => l.trim() === 'hyperstache.handlers()',
+      (l) => l.trim() === 'hyperengine.handlers()',
     )
     expect(handlerCalls).toHaveLength(1)
   })
@@ -68,53 +68,53 @@ describe('generateRuntimeSource', () => {
   it('registers all expected AO handlers', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('"Hyperstache-Get"')
-    expect(source).toContain('"Hyperstache-Set"')
-    expect(source).toContain('"Hyperstache-Remove"')
-    expect(source).toContain('"Hyperstache-List"')
-    expect(source).toContain('"Hyperstache-RenderTemplate"')
-    expect(source).toContain('"Hyperstache-Render"')
+    expect(source).toContain('"Hyperengine-Get"')
+    expect(source).toContain('"Hyperengine-Set"')
+    expect(source).toContain('"Hyperengine-Remove"')
+    expect(source).toContain('"Hyperengine-List"')
+    expect(source).toContain('"Hyperengine-RenderTemplate"')
+    expect(source).toContain('"Hyperengine-Render"')
   })
 
   it('guards mutation handlers with permission check', async () => {
     const source = await generateRuntimeSource(defaults)
 
     // Set and Remove handlers should use has_permission
-    expect(source).toContain('hyperstache.has_permission(msg.From')
+    expect(source).toContain('hyperengine.has_permission(msg.From')
   })
 
   it('sync() force-overwrites from bundled templates', async () => {
     const source = await generateRuntimeSource(defaults)
 
     // sync should not check for nil (unconditional overwrite)
-    expect(source).toContain('function hyperstache.sync()')
-    const syncStart = source.indexOf('function hyperstache.sync()')
+    expect(source).toContain('function hyperengine.sync()')
+    const syncStart = source.indexOf('function hyperengine.sync()')
     const syncEnd = source.indexOf('end', syncStart)
     const syncBody = source.slice(syncStart, syncEnd)
-    expect(syncBody).toContain('hyperstache_templates[k] = v')
+    expect(syncBody).toContain('hyperengine_templates[k] = v')
     expect(syncBody).not.toContain('== nil')
   })
 
-  it('initializes hyperstache_acl global with defensive pattern', async () => {
+  it('initializes hyperengine_acl global with defensive pattern', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('if not hyperstache_acl then')
-    expect(source).toContain('hyperstache_acl = {}')
+    expect(source).toContain('if not hyperengine_acl then')
+    expect(source).toContain('hyperengine_acl = {}')
   })
 
   it('exposes ACL API functions', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.has_permission(address, action)')
-    expect(source).toContain('function hyperstache.grant(address, role)')
-    expect(source).toContain('function hyperstache.revoke(address, role)')
-    expect(source).toContain('function hyperstache.get_roles(address)')
+    expect(source).toContain('function hyperengine.has_permission(address, action)')
+    expect(source).toContain('function hyperengine.grant(address, role)')
+    expect(source).toContain('function hyperengine.revoke(address, role)')
+    expect(source).toContain('function hyperengine.get_roles(address)')
   })
 
   it('has_permission checks Owner, admin role, and specific action', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.has_permission(')
+    const fnStart = source.indexOf('function hyperengine.has_permission(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -129,29 +129,29 @@ describe('generateRuntimeSource', () => {
   it('revoke removes role from ACL', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.revoke(')
+    const fnStart = source.indexOf('function hyperengine.revoke(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
-    expect(fnBody).toContain('hyperstache_acl[address][role] = nil')
+    expect(fnBody).toContain('hyperengine_acl[address][role] = nil')
   })
 
   it('registers ACL handler endpoints', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('"Hyperstache-Grant-Role"')
-    expect(source).toContain('"Hyperstache-Revoke-Role"')
-    expect(source).toContain('"Hyperstache-Get-Roles"')
+    expect(source).toContain('"Hyperengine-Grant-Role"')
+    expect(source).toContain('"Hyperengine-Revoke-Role"')
+    expect(source).toContain('"Hyperengine-Get-Roles"')
   })
 
   it('guards mutation handlers with has_permission', async () => {
     const source = await generateRuntimeSource(defaults)
 
     expect(source).toContain(
-      'hyperstache.has_permission(msg.From, "Hyperstache-Set")',
+      'hyperengine.has_permission(msg.From, "Hyperengine-Set")',
     )
     expect(source).toContain(
-      'hyperstache.has_permission(msg.From, "Hyperstache-Remove")',
+      'hyperengine.has_permission(msg.From, "Hyperengine-Remove")',
     )
   })
 
@@ -159,18 +159,18 @@ describe('generateRuntimeSource', () => {
     const source = await generateRuntimeSource(defaults)
 
     // Both grant and revoke handlers require admin permission
-    const grantStart = source.indexOf('"Hyperstache-Grant-Role"')
+    const grantStart = source.indexOf('"Hyperengine-Grant-Role"')
     const grantEnd = source.indexOf('end\n  )', grantStart)
     const grantBody = source.slice(grantStart, grantEnd)
     expect(grantBody).toContain(
-      'hyperstache.has_permission(msg.From, "admin")',
+      'hyperengine.has_permission(msg.From, "admin")',
     )
 
-    const revokeStart = source.indexOf('"Hyperstache-Revoke-Role"')
+    const revokeStart = source.indexOf('"Hyperengine-Revoke-Role"')
     const revokeEnd = source.indexOf('end\n  )', revokeStart)
     const revokeBody = source.slice(revokeStart, revokeEnd)
     expect(revokeBody).toContain(
-      'hyperstache.has_permission(msg.From, "admin")',
+      'hyperengine.has_permission(msg.From, "admin")',
     )
   })
 
@@ -178,7 +178,7 @@ describe('generateRuntimeSource', () => {
     const source = await generateRuntimeSource(defaults)
 
     // Grant handler: admin escalation guard
-    const grantStart = source.indexOf('"Hyperstache-Grant-Role"')
+    const grantStart = source.indexOf('"Hyperengine-Grant-Role"')
     const grantEnd = source.indexOf('end\n  )', grantStart)
     const grantBody = source.slice(grantStart, grantEnd)
     expect(grantBody).toContain('msg.From ~= Owner')
@@ -186,7 +186,7 @@ describe('generateRuntimeSource', () => {
     expect(grantBody).toContain('only the owner can grant admin role')
 
     // Revoke handler: admin escalation guard
-    const revokeStart = source.indexOf('"Hyperstache-Revoke-Role"')
+    const revokeStart = source.indexOf('"Hyperengine-Revoke-Role"')
     const revokeEnd = source.indexOf('end\n  )', revokeStart)
     const revokeBody = source.slice(revokeStart, revokeEnd)
     expect(revokeBody).toContain('msg.From ~= Owner')
@@ -197,7 +197,7 @@ describe('generateRuntimeSource', () => {
   it('Get-Roles handler is public with no permission check', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const getRolesStart = source.indexOf('"Hyperstache-Get-Roles"')
+    const getRolesStart = source.indexOf('"Hyperengine-Get-Roles"')
     const getRolesEnd = source.indexOf('end\n  )', getRolesStart)
     const getRolesBody = source.slice(getRolesStart, getRolesEnd)
 
@@ -206,15 +206,15 @@ describe('generateRuntimeSource', () => {
     expect(getRolesBody).not.toContain('assert')
   })
 
-  it('renderTemplate builds merged partials from hyperstache_templates', async () => {
+  it('renderTemplate builds merged partials from hyperengine_templates', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.renderTemplate(')
+    const fnStart = source.indexOf('function hyperengine.renderTemplate(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
-    // Should copy hyperstache_templates as base partials
-    expect(fnBody).toContain('for k, v in pairs(hyperstache_templates)')
+    // Should copy hyperengine_templates as base partials
+    expect(fnBody).toContain('for k, v in pairs(hyperengine_templates)')
     expect(fnBody).toContain('merged[k] = v')
     // Should overlay explicit partials
     expect(fnBody).toContain('if partials then')
@@ -223,15 +223,15 @@ describe('generateRuntimeSource', () => {
     expect(fnBody).toContain('lustache:render(tmpl, data, merged)')
   })
 
-  it('render builds merged partials from hyperstache_templates', async () => {
+  it('render builds merged partials from hyperengine_templates', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.render(')
+    const fnStart = source.indexOf('function hyperengine.render(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
-    // Should copy hyperstache_templates as base partials
-    expect(fnBody).toContain('for k, v in pairs(hyperstache_templates)')
+    // Should copy hyperengine_templates as base partials
+    expect(fnBody).toContain('for k, v in pairs(hyperengine_templates)')
     expect(fnBody).toContain('merged[k] = v')
     // Should overlay explicit partials
     expect(fnBody).toContain('if partials then')
@@ -243,7 +243,7 @@ describe('generateRuntimeSource', () => {
   it('RenderTemplate handler parses JSON with data and partials', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const handlerStart = source.indexOf('"Hyperstache-RenderTemplate"')
+    const handlerStart = source.indexOf('"Hyperengine-RenderTemplate"')
     const handlerEnd = source.indexOf('end\n  )', handlerStart)
     const handlerBody = source.slice(handlerStart, handlerEnd)
 
@@ -257,7 +257,7 @@ describe('generateRuntimeSource', () => {
   it('Render handler passes partials from parsed JSON', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const handlerStart = source.indexOf('"Hyperstache-Render"')
+    const handlerStart = source.indexOf('"Hyperengine-Render"')
     const handlerEnd = source.indexOf('end\n  )', handlerStart)
     const handlerBody = source.slice(handlerStart, handlerEnd)
 
@@ -268,14 +268,14 @@ describe('generateRuntimeSource', () => {
   it('exposes patch() that accumulates without sending', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.patch(patches)')
+    expect(source).toContain('function hyperengine.patch(patches)')
 
-    const fnStart = source.indexOf('function hyperstache.patch(')
+    const fnStart = source.indexOf('function hyperengine.patch(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should merge into persistent state
-    expect(fnBody).toContain('_deep_set(hyperstache_patches, k, v)')
+    expect(fnBody).toContain('_deep_set(hyperengine_patches, k, v)')
     // Should NOT send
     expect(fnBody).not.toContain('Send(')
     expect(fnBody).not.toContain('_sync_state()')
@@ -284,25 +284,25 @@ describe('generateRuntimeSource', () => {
   it('exposes publish() that accumulates and sends full state to patch@1.0', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.publish(patches)')
+    expect(source).toContain('function hyperengine.publish(patches)')
 
-    const fnStart = source.indexOf('function hyperstache.publish(')
+    const fnStart = source.indexOf('function hyperengine.publish(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should optionally merge new patches
-    expect(fnBody).toContain('_deep_set(hyperstache_patches, k, v)')
+    expect(fnBody).toContain('_deep_set(hyperengine_patches, k, v)')
     // Should send full accumulated state
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_patch_key]')
-    expect(fnBody).toContain('hyperstache_patches')
+    expect(fnBody).toContain('hyperengine_patches')
   })
 
-  it('initializes hyperstache_patches global with defensive pattern', async () => {
+  it('initializes hyperengine_patches global with defensive pattern', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('if not hyperstache_patches then')
-    expect(source).toContain('hyperstache_patches = {}')
+    expect(source).toContain('if not hyperengine_patches then')
+    expect(source).toContain('hyperengine_patches = {}')
   })
 
   it('uses default _patch_key = "ui"', async () => {
@@ -318,31 +318,31 @@ describe('generateRuntimeSource', () => {
     expect(source).not.toContain('local _patch_key = "ui"')
   })
 
-  it('uses default _state_key = "hyperstache_state"', async () => {
+  it('uses default _state_key = "hyperengine_state"', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('local _state_key = "hyperstache_state"')
+    expect(source).toContain('local _state_key = "hyperengine_state"')
   })
 
   it('injects custom stateKey into _state_key', async () => {
     const source = await generateRuntimeSource({ ...defaults, stateKey: 'my_state' })
 
     expect(source).toContain('local _state_key = "my_state"')
-    expect(source).not.toContain('local _state_key = "hyperstache_state"')
+    expect(source).not.toContain('local _state_key = "hyperengine_state"')
   })
 
   it('defines _sync_state method that sends templates and acl under _state_key', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache._sync_state()')
+    expect(source).toContain('function hyperengine._sync_state()')
 
-    const fnStart = source.indexOf('function hyperstache._sync_state()')
+    const fnStart = source.indexOf('function hyperengine._sync_state()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_state_key]')
-    expect(fnBody).toContain('templates = hyperstache_templates')
+    expect(fnBody).toContain('templates = hyperengine_templates')
     expect(fnBody).toContain("state['acl_'..address]")
   })
 
@@ -350,8 +350,8 @@ describe('generateRuntimeSource', () => {
     const source = await generateRuntimeSource(defaults)
 
     // _sync_state() is a method, so it must be called after the module table is defined
-    const moduleDef = source.indexOf('local hyperstache = {}')
-    const firstFn = source.indexOf('function hyperstache.get(')
+    const moduleDef = source.indexOf('local hyperengine = {}')
+    const firstFn = source.indexOf('function hyperengine.get(')
     const between = source.slice(moduleDef, firstFn)
     expect(between).toContain('_sync_state()')
   })
@@ -359,7 +359,7 @@ describe('generateRuntimeSource', () => {
   it('set() calls _sync_state()', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.set(')
+    const fnStart = source.indexOf('function hyperengine.set(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -369,7 +369,7 @@ describe('generateRuntimeSource', () => {
   it('remove() calls _sync_state()', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.remove(')
+    const fnStart = source.indexOf('function hyperengine.remove(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -379,7 +379,7 @@ describe('generateRuntimeSource', () => {
   it('sync() calls _sync_state()', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.sync()')
+    const fnStart = source.indexOf('function hyperengine.sync()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -389,7 +389,7 @@ describe('generateRuntimeSource', () => {
   it('grant() calls _sync_state()', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.grant(')
+    const fnStart = source.indexOf('function hyperengine.grant(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -399,7 +399,7 @@ describe('generateRuntimeSource', () => {
   it('revoke() calls _sync_state() after mutation', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.revoke(')
+    const fnStart = source.indexOf('function hyperengine.revoke(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -409,7 +409,7 @@ describe('generateRuntimeSource', () => {
   it('revoke() skips _sync_state on early return when address not in ACL', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.revoke(')
+    const fnStart = source.indexOf('function hyperengine.revoke(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -419,28 +419,28 @@ describe('generateRuntimeSource', () => {
     expect(earlyReturn).toBeLessThan(syncCall)
   })
 
-  it('initializes hyperstache_published global with defensive pattern', async () => {
+  it('initializes hyperengine_published global with defensive pattern', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('if not hyperstache_published then')
-    expect(source).toContain('hyperstache_published = {}')
+    expect(source).toContain('if not hyperengine_published then')
+    expect(source).toContain('hyperengine_published = {}')
   })
 
   it('exposes publishTemplate() that renders, registers, and publishes', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.publishTemplate(key, patchPath, data, partials, statePath)')
+    expect(source).toContain('function hyperengine.publishTemplate(key, patchPath, data, partials, statePath)')
 
-    const fnStart = source.indexOf('function hyperstache.publishTemplate(')
+    const fnStart = source.indexOf('function hyperengine.publishTemplate(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
-    // Should register in hyperstache_published
-    expect(fnBody).toContain('hyperstache_published[patchPath]')
+    // Should register in hyperengine_published
+    expect(fnBody).toContain('hyperengine_published[patchPath]')
     // Should render to get HTML
-    expect(fnBody).toContain('hyperstache.renderTemplate(key,')
+    expect(fnBody).toContain('hyperengine.renderTemplate(key,')
     // Should store in patches
-    expect(fnBody).toContain('_deep_set(hyperstache_patches, patchPath, html)')
+    expect(fnBody).toContain('_deep_set(hyperengine_patches, patchPath, html)')
     // Should send to patch device
     expect(fnBody).toContain('device = "patch@1.0"')
     expect(fnBody).toContain('[_patch_key]')
@@ -451,7 +451,7 @@ describe('generateRuntimeSource', () => {
   it('publishTemplate() supports function data for callbacks', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.publishTemplate(')
+    const fnStart = source.indexOf('function hyperengine.publishTemplate(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -466,16 +466,16 @@ describe('generateRuntimeSource', () => {
   it('exposes unpublishTemplate() that deregisters and clears patch', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.unpublishTemplate(patchPath)')
+    expect(source).toContain('function hyperengine.unpublishTemplate(patchPath)')
 
-    const fnStart = source.indexOf('function hyperstache.unpublishTemplate(')
+    const fnStart = source.indexOf('function hyperengine.unpublishTemplate(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should remove from published registry
-    expect(fnBody).toContain('hyperstache_published[patchPath] = nil')
+    expect(fnBody).toContain('hyperengine_published[patchPath] = nil')
     // Should remove from patches
-    expect(fnBody).toContain('_deep_remove(hyperstache_patches, patchPath)')
+    expect(fnBody).toContain('_deep_remove(hyperengine_patches, patchPath)')
     // Should send updated patches
     expect(fnBody).toContain('device = "patch@1.0"')
   })
@@ -483,7 +483,7 @@ describe('generateRuntimeSource', () => {
   it('set() calls _auto_rerender after _sync_state', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.set(')
+    const fnStart = source.indexOf('function hyperengine.set(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -497,25 +497,25 @@ describe('generateRuntimeSource', () => {
   it('remove() calls _auto_rerender and cleans up published entries', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.remove(')
+    const fnStart = source.indexOf('function hyperengine.remove(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     expect(fnBody).toContain('_auto_rerender(key)')
     // Should clean up published entries for removed key
-    expect(fnBody).toContain('hyperstache_published[patchPath] = nil')
+    expect(fnBody).toContain('hyperengine_published[patchPath] = nil')
     expect(fnBody).toContain('reg.key == key')
   })
 
   it('sync() re-renders all published templates', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.sync()')
+    const fnStart = source.indexOf('function hyperengine.sync()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should iterate published registry
-    expect(fnBody).toContain('for patchPath, reg in pairs(hyperstache_published)')
+    expect(fnBody).toContain('for patchPath, reg in pairs(hyperengine_published)')
     // Should re-render using lustache
     expect(fnBody).toContain('lustache.render')
     // Should publish if anything changed
@@ -559,7 +559,7 @@ describe('generateRuntimeSource', () => {
     const fnBody = source.slice(fnStart, fnEnd)
 
     // Should iterate published registry
-    expect(fnBody).toContain('for patchPath, reg in pairs(hyperstache_published)')
+    expect(fnBody).toContain('for patchPath, reg in pairs(hyperengine_published)')
     // Should check direct key match and dependency
     expect(fnBody).toContain('reg.key == changed_key')
     expect(fnBody).toContain('_depends_on(reg.key, changed_key)')
@@ -593,14 +593,14 @@ describe('generateRuntimeSource', () => {
   it('exposes listPublished() that returns serializable view of published', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('function hyperstache.listPublished()')
+    expect(source).toContain('function hyperengine.listPublished()')
 
-    const fnStart = source.indexOf('function hyperstache.listPublished()')
+    const fnStart = source.indexOf('function hyperengine.listPublished()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
-    // Should iterate hyperstache_published
-    expect(fnBody).toContain('for patchPath, reg in pairs(hyperstache_published)')
+    // Should iterate hyperengine_published
+    expect(fnBody).toContain('for patchPath, reg in pairs(hyperengine_published)')
     // Should return key and statePath
     expect(fnBody).toContain('key = reg.key')
     expect(fnBody).toContain('statePath = reg.statePath')
@@ -609,7 +609,7 @@ describe('generateRuntimeSource', () => {
   it('publishTemplate() stores statePath in registration', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache.publishTemplate(')
+    const fnStart = source.indexOf('function hyperengine.publishTemplate(')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
@@ -620,26 +620,26 @@ describe('generateRuntimeSource', () => {
   it('_sync_state includes published_keys', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    const fnStart = source.indexOf('function hyperstache._sync_state()')
+    const fnStart = source.indexOf('function hyperengine._sync_state()')
     const fnEnd = source.indexOf('\nend', fnStart)
     const fnBody = source.slice(fnStart, fnEnd)
 
     expect(fnBody).toContain("published_keys = ''")
-    expect(fnBody).toContain('for patchPath, _ in pairs(hyperstache_published)')
+    expect(fnBody).toContain('for patchPath, _ in pairs(hyperengine_published)')
     expect(fnBody).toContain("state.published_keys = state.published_keys .. patchPath")
   })
 
-  it('registers Hyperstache-Publish-Template handler', async () => {
+  it('registers Hyperengine-Publish-Template handler', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('"Hyperstache-Publish-Template"')
+    expect(source).toContain('"Hyperengine-Publish-Template"')
 
-    const handlerStart = source.indexOf('"Hyperstache-Publish-Template"')
+    const handlerStart = source.indexOf('"Hyperengine-Publish-Template"')
     const handlerEnd = source.indexOf('end\n  )', handlerStart)
     const handlerBody = source.slice(handlerStart, handlerEnd)
 
     // Permission gated
-    expect(handlerBody).toContain('hyperstache.has_permission(msg.From, "Hyperstache-Publish-Template")')
+    expect(handlerBody).toContain('hyperengine.has_permission(msg.From, "Hyperengine-Publish-Template")')
     // Requires Key and Path tags
     expect(handlerBody).toContain('msg.Tags.Key or msg.Tags.key')
     expect(handlerBody).toContain('msg.Tags.Path or msg.Tags.path')
@@ -648,32 +648,32 @@ describe('generateRuntimeSource', () => {
     // Uses _resolve_path for state path
     expect(handlerBody).toContain('_resolve_path(statePath)')
     // Calls publishTemplate
-    expect(handlerBody).toContain('hyperstache.publishTemplate')
+    expect(handlerBody).toContain('hyperengine.publishTemplate')
   })
 
-  it('registers Hyperstache-Unpublish-Template handler', async () => {
+  it('registers Hyperengine-Unpublish-Template handler', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('"Hyperstache-Unpublish-Template"')
+    expect(source).toContain('"Hyperengine-Unpublish-Template"')
 
-    const handlerStart = source.indexOf('"Hyperstache-Unpublish-Template"')
+    const handlerStart = source.indexOf('"Hyperengine-Unpublish-Template"')
     const handlerEnd = source.indexOf('end\n  )', handlerStart)
     const handlerBody = source.slice(handlerStart, handlerEnd)
 
     // Permission gated
-    expect(handlerBody).toContain('hyperstache.has_permission(msg.From, "Hyperstache-Unpublish-Template")')
+    expect(handlerBody).toContain('hyperengine.has_permission(msg.From, "Hyperengine-Unpublish-Template")')
     // Requires Path tag
     expect(handlerBody).toContain('msg.Tags.Path or msg.Tags.path')
     // Calls unpublishTemplate
-    expect(handlerBody).toContain('hyperstache.unpublishTemplate(path)')
+    expect(handlerBody).toContain('hyperengine.unpublishTemplate(path)')
   })
 
-  it('registers Hyperstache-List-Published handler (public, no permission check)', async () => {
+  it('registers Hyperengine-List-Published handler (public, no permission check)', async () => {
     const source = await generateRuntimeSource(defaults)
 
-    expect(source).toContain('"Hyperstache-List-Published"')
+    expect(source).toContain('"Hyperengine-List-Published"')
 
-    const handlerStart = source.indexOf('"Hyperstache-List-Published"')
+    const handlerStart = source.indexOf('"Hyperengine-List-Published"')
     const handlerEnd = source.indexOf('end\n  )', handlerStart)
     const handlerBody = source.slice(handlerStart, handlerEnd)
 
@@ -681,7 +681,7 @@ describe('generateRuntimeSource', () => {
     expect(handlerBody).not.toContain('has_permission')
     expect(handlerBody).not.toContain('assert')
     // Should call listPublished and return JSON
-    expect(handlerBody).toContain('hyperstache.listPublished()')
+    expect(handlerBody).toContain('hyperengine.listPublished()')
     expect(handlerBody).toContain('json.encode(published)')
   })
 })

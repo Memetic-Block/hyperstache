@@ -12,7 +12,7 @@ export interface DeployManifest {
 }
 
 function manifestPath(root: string): string {
-  return join(root, '.hyperstache', 'deploy.json')
+  return join(root, '.hyperengine', 'deploy.json')
 }
 
 export async function readManifest(root: string): Promise<DeployManifest> {
@@ -26,7 +26,7 @@ export async function readManifest(root: string): Promise<DeployManifest> {
 
 export async function writeManifest(root: string, manifest: DeployManifest): Promise<void> {
   const filePath = manifestPath(root)
-  await mkdir(join(root, '.hyperstache'), { recursive: true })
+  await mkdir(join(root, '.hyperengine'), { recursive: true })
   await writeFile(filePath, JSON.stringify(manifest, null, 2) + '\n')
 }
 

@@ -1,5 +1,5 @@
 <footer>
-  <p><small><strong>Hyperstache Admin</strong></small></p>
+  <p><small><strong>Hyperengine Admin</strong></small></p>
   <p><small><code>{{ao_env.Process.Tags.Name}}</code></small></p>
   <p>
     <a href="https://lunar.ar.io/#/explorer/{{ao_env.Process.Id}}" target="_blank" rel="noopener">

@@ -1,4 +1,4 @@
-# hyperstache
+# hyperengine
 
 Framework for bundling [AO](https://ao.arweave.net) Lua processes for deployment on [HyperBEAM](https://hyperbeam.arweave.net) with
 [Mustache](https://mustache.github.io/) templating and optional [Luarocks](https://luarocks.org/) support.
@@ -68,7 +68,7 @@ beyond the built-in [lustache](https://github.com/Olivine-Labs/lustache) templat
 Use in an existing project:
 
 ```bash
-npm install hyperstache
+npm install @memetic-block/hyperengine
 ```
 
 ## Quick Start
@@ -76,7 +76,7 @@ npm install hyperstache
 Scaffold a new project:
 
 ```bash
-npx hyperstache create my-app
+npx hyperengine create my-app
 cd my-app
 npm install
 ```
@@ -85,19 +85,19 @@ Add flags to customize the scaffold:
 
 ```bash
 # With TypeScript support
-npx hyperstache create my-app --typescript
+npx hyperengine create my-app --typescript
 
 # With ESM mode for inlined scripts
-npx hyperstache create my-app --esm
+npx hyperengine create my-app --esm
 
 # Combine flags
-npx hyperstache create my-app --typescript --esm
+npx hyperengine create my-app --typescript --esm
 
 # With admin interface for template & ACL management
-npx hyperstache create my-app --admin
+npx hyperengine create my-app --admin
 
 # Specify a target directory
-npx hyperstache create my-app --directory ~/projects
+npx hyperengine create my-app --directory ~/projects
 ```
 
 | Flag           | Effect                                                       |
@@ -112,7 +112,7 @@ All scaffolded projects include Vite template processing and CSS out of the box.
 Build:
 
 ```bash
-npx hyperstache build
+npx hyperengine build
 ```
 
 ### Manual Setup
@@ -120,8 +120,8 @@ npx hyperstache build
 Create a config file in your project root:
 
 ```ts
-// hyperstache.config.ts
-import { defineConfig } from 'hyperstache'
+// hyperengine.config.ts
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -134,7 +134,7 @@ Write your Lua process:
 
 ```lua
 -- src/process.lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 
 hs.publish({
   home = hs.render(hs.get('index.html'), { greeting = 'Hello' })
@@ -144,7 +144,7 @@ hs.publish({
 Or Dynamic Read module:
 ```lua
 -- src/dynamic_read.lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 
 function hello_world(base, req)
   return hs.render(hs.get('index.html'), { greeting = 'Hello, ' .. req.name .. '!' })
@@ -167,7 +167,7 @@ Add HTML templates alongside your Lua source:
 Build:
 
 ```bash
-npx hyperstache build
+npx hyperengine build
 ```
 
 This produces a single `dist/process.lua` file with all Lua modules merged and all templates inlined as Lua long strings, ready for AO eval.
@@ -189,15 +189,15 @@ will return
 
 Or with a dynamic read module such as the one referenced above from a HyperBEAM node:
 ```bash
-$ curl -L 'https://push.forward.computer/<process_id>/now/~lua@5.3a&module=<module_id>/hello_world?name=Hyperstache'; echo
+$ curl -L 'https://push.forward.computer/<process_id>/now/~lua@5.3a&module=<module_id>/hello_world?name=Hyperengine'; echo
 ```
 will return
 ```html
 <!DOCTYPE html>
 <html>
-<head><title>Hello, Hyperstache!</title></head>
+<head><title>Hello, Hyperengine!</title></head>
 <body>
-  <h1>Hello, Hyperstache!</h1>
+  <h1>Hello, Hyperengine!</h1>
 </body>
 </html>
 ```
@@ -207,8 +207,8 @@ will return
 A single project can define multiple AO processes. Each process gets its own entry point and produces a separate bundled Lua file:
 
 ```ts
-// hyperstache.config.ts
-import { defineConfig } from 'hyperstache'
+// hyperengine.config.ts
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -218,7 +218,7 @@ export default defineConfig({
 })
 ```
 
-Running `hyperstache build` bundles all processes in parallel, producing `dist/process.lua` and `dist/worker.lua`.
+Running `hyperengine build` bundles all processes in parallel, producing `dist/process.lua` and `dist/worker.lua`.
 
 ### Dynamic Read Modules
 
@@ -271,7 +271,7 @@ export default defineConfig({
 Use `--process` to build only one:
 
 ```bash
-npx hyperstache build --process main
+npx hyperengine build --process main
 ```
 
 ## Vite Template Processing
@@ -279,8 +279,8 @@ npx hyperstache build --process main
 Enable Vite-powered template processing to compile CSS, TypeScript, and other frontend assets directly into your HTML templates before they're bundled into Lua:
 
 ```ts
-// hyperstache.config.ts
-import { defineConfig } from 'hyperstache'
+// hyperengine.config.ts
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -310,7 +310,7 @@ Your templates can reference local CSS and JS/TS files with standard HTML tags:
 </html>
 ```
 
-When you run `hyperstache build`, Vite will:
+When you run `hyperengine build`, Vite will:
 
 1. Compile TypeScript, process PostCSS/Tailwind, bundle JS modules
 2. Inline all local `<link rel="stylesheet">` → `<style>` and `<script src>` → `<script>` tags
@@ -324,7 +324,7 @@ The result is self-contained HTML with all assets embedded, ready for Lua inlini
 Pass Vite configuration for PostCSS, Tailwind, custom plugins, and more:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
@@ -357,7 +357,7 @@ Only `.html` templates are processed through Vite. Other template formats (`.htm
 By default, Vite inlines all local CSS and JS assets into the HTML output. Use `external` to prevent specific dependencies from being bundled — Rollup will leave their imports untouched:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -375,10 +375,10 @@ The `external` array accepts strings and regular expressions, matching [Rollup's
 
 #### Import Maps for External JS
 
-For external JavaScript modules that your frontend code loads via dynamic `import()`, you can specify a URL alongside each external. Hyperstache will inject a [`<script type="importmap">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap) into each HTML template's `<head>` so the browser can resolve bare import specifiers at runtime:
+For external JavaScript modules that your frontend code loads via dynamic `import()`, you can specify a URL alongside each external. Hyperengine will inject a [`<script type="importmap">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap) into each HTML template's `<head>` so the browser can resolve bare import specifiers at runtime:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -432,7 +432,7 @@ Configured externals are reported in the `BundleResult.viteExternals` array for 
 When developing with ESM `<script type="module">` entry points in your HTML templates, enable `esm: true` to preserve module semantics through inlining:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -474,12 +474,12 @@ Without `esm`, the default behavior is unchanged: `type="module"` is stripped fr
 
 ## Runtime Template Management
 
-Hyperstache automatically bundles a `hyperstache` Lua runtime module into every process for managing templates after deployment. The runtime source includes [LuaDoc annotations](https://luals.github.io/wiki/annotations/) (`---@param`, `---@return`, `---@class`, `---@alias`, etc.) for full IDE autocompletion and type checking in editors that support the [Lua Language Server](https://github.com/LuaLS/lua-language-server).
+Hyperengine automatically bundles a `hyperengine` Lua runtime module into every process for managing templates after deployment. The runtime source includes [LuaDoc annotations](https://luals.github.io/wiki/annotations/) (`---@param`, `---@return`, `---@class`, `---@alias`, etc.) for full IDE autocompletion and type checking in editors that support the [Lua Language Server](https://github.com/LuaLS/lua-language-server).
 
 You can require it in your Lua process:
 
 ```lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 
 -- Render a bundled template by key
 local html = hs.renderTemplate('index.html', { title = 'Hello' })
@@ -516,18 +516,18 @@ hs.publish({ page = hs.renderTemplate('index.html', { title = 'Hello' }) })
 The runtime module:
 
 - **Seeds from build-time templates** — On first load, all bundled templates are copied into the runtime store. On redeployment, new bundled templates merge in without overwriting runtime modifications.
-- **Persists across reloads** — State is stored in the lowercase global `hyperstache_templates`
+- **Persists across reloads** — State is stored in the lowercase global `hyperengine_templates`
 - **Integrates with lustache** — `hs.renderTemplate(key, data, partials)` looks up a template by key and renders it; `hs.render(template, data, partials)` renders a raw template string directly.
-- **Partials support** — Both render methods accept an optional third argument: a table of partials (keyed by name, values are template strings). All registered `hyperstache_templates` are automatically available as partials, so `{{>index.html}}` works in any template without extra setup. Explicit partials override same-named keys from the template store.
-- **Publish to patch@1.0** — `hs.publish(patches)` sends rendered content to `patch@1.0`, nesting the payload under the configured `patchKey` (default `"ui"`). This prevents raw HTML from appearing in message headers, which would otherwise break `@permaweb/aoconnect` methods. The JSON device lazylink-encodes the HTML within the nested key. Patches are accumulated in the persistent `hyperstache_patches` global — each call merges new keys and sends the full state, so no previously-published pages are lost. Use `hs.patch(patches)` to register content without sending (useful during init when multiple modules contribute pages before the first publish).
-- **Auto-sync state to patch@1.0** — `hyperstache_templates` and `hyperstache_acl` are automatically sent to `patch@1.0` under the configured `stateKey` (default `"hyperstache_state"`) whenever they change (`set`, `remove`, `sync`, `grant`, `revoke`) and at init. The state is nested as `{ templates = hyperstache_templates, acl = hyperstache_acl }`, making it fetchable via URL GET on HyperBEAM mainnet at `/<process_id>/now/hyperstache_state/templates/...` and `/<process_id>/now/hyperstache_state/acl/...`. No manual publish step is needed for template or ACL state.
+- **Partials support** — Both render methods accept an optional third argument: a table of partials (keyed by name, values are template strings). All registered `hyperengine_templates` are automatically available as partials, so `{{>index.html}}` works in any template without extra setup. Explicit partials override same-named keys from the template store.
+- **Publish to patch@1.0** — `hs.publish(patches)` sends rendered content to `patch@1.0`, nesting the payload under the configured `patchKey` (default `"ui"`). This prevents raw HTML from appearing in message headers, which would otherwise break `@permaweb/aoconnect` methods. The JSON device lazylink-encodes the HTML within the nested key. Patches are accumulated in the persistent `hyperengine_patches` global — each call merges new keys and sends the full state, so no previously-published pages are lost. Use `hs.patch(patches)` to register content without sending (useful during init when multiple modules contribute pages before the first publish).
+- **Auto-sync state to patch@1.0** — `hyperengine_templates` and `hyperengine_acl` are automatically sent to `patch@1.0` under the configured `stateKey` (default `"hyperengine_state"`) whenever they change (`set`, `remove`, `sync`, `grant`, `revoke`) and at init. The state is nested as `{ templates = hyperengine_templates, acl = hyperengine_acl }`, making it fetchable via URL GET on HyperBEAM mainnet at `/<process_id>/now/hyperengine_state/templates/...` and `/<process_id>/now/hyperengine_state/acl/...`. No manual publish step is needed for template or ACL state.
 
 ### Auto Re-render (publishTemplate)
 
 Use `hs.publishTemplate()` to render a template, publish it to `patch@1.0`, and **automatically re-render** whenever the source template (or any partial it depends on) is updated at runtime:
 
 ```lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 
 -- Render and publish 'index.html' under the patch path 'page'
 -- If someone later calls hs.set('index.html', newContent), the page
@@ -552,14 +552,14 @@ hs.unpublishTemplate('page')
 
 **How it works:**
 
-- `publishTemplate(key, patchPath, data, partials, statePath)` renders the template, stores the registration in the persistent `hyperstache_published` global, and publishes the result to `patch@1.0` under the configured `patchKey`. The optional `statePath` string is stored alongside the registration for UI display (it records which Lua global the `data` function references).
+- `publishTemplate(key, patchPath, data, partials, statePath)` renders the template, stores the registration in the persistent `hyperengine_published` global, and publishes the result to `patch@1.0` under the configured `patchKey`. The optional `statePath` string is stored alongside the registration for UI display (it records which Lua global the `data` function references).
 - `listPublished()` returns a serializable view of all published templates: `{ [patchPath] = { key, statePath } }`.
 - When `set()` or `remove()` modifies a template, all published templates whose source key matches — or whose template transitively depends on the changed key via mustache partials (`{{>name}}`) — are automatically re-rendered and re-published in a single batched `Send`.
 - When `sync()` overwrites templates from the bundle, all published templates are re-rendered.
 - The `data` argument can be a **table** (persisted across AO process reloads) or a **function** (called on each render for fresh data; lost on process reload since functions can't be serialized).
 - Re-render failures (e.g., missing template after removal) are silently skipped via `pcall` — they won't crash your process.
 
-The admin interface uses `publishTemplate` internally, so editing `admin/index.html` via `Hyperstache-Set` automatically re-renders and re-publishes the admin UI.
+The admin interface uses `publishTemplate` internally, so editing `admin/index.html` via `Hyperengine-Set` automatically re-renders and re-publishes the admin UI.
 
 ### AO Message Handlers
 
@@ -578,25 +578,25 @@ This registers twelve handlers:
 
 | Action                       | Tags              | Description                                                       | Access       |
 |------------------------------|-------------------|-------------------------------------------------------------------|--------------|
-| `Hyperstache-Get`            | `Key`             | Returns raw template content                                      | Anyone       |
-| `Hyperstache-List`           |                   | Returns all template keys                                         | Anyone       |
-| `Hyperstache-RenderTemplate` | `Key`             | Renders a stored template by key (JSON `{ data, partials }` payload) | Anyone       |
-| `Hyperstache-Render`         |                   | Renders a raw template string (JSON `{ template, data, partials }` payload) | Anyone       |
-| `Hyperstache-Set`            | `Key`             | Creates/updates a template                                        | Permitted    |
-| `Hyperstache-Remove`         | `Key`             | Deletes a template                                                | Permitted    |
-| `Hyperstache-Grant-Role` | `Address`, `Role` | Grants an ACL role to an address        | Owner/Admin  |
-| `Hyperstache-Revoke-Role`| `Address`, `Role` | Revokes an ACL role from an address     | Owner/Admin  |
-| `Hyperstache-Get-Roles`  | `Address`         | Returns roles for an address (or all)   | Anyone       |
-| `Hyperstache-Publish-Template` | `Key`, `Path`, `State-Path`? | Publishes a rendered template at a patch path. Optional `State-Path` references a Lua global for live data. | Permitted |
-| `Hyperstache-Unpublish-Template` | `Path`       | Removes a published template from a patch path | Permitted |
-| `Hyperstache-List-Published` |                   | Returns JSON of all published templates (`{ path: { key, statePath } }`) | Anyone |
+| `Hyperengine-Get`            | `Key`             | Returns raw template content                                      | Anyone       |
+| `Hyperengine-List`           |                   | Returns all template keys                                         | Anyone       |
+| `Hyperengine-RenderTemplate` | `Key`             | Renders a stored template by key (JSON `{ data, partials }` payload) | Anyone       |
+| `Hyperengine-Render`         |                   | Renders a raw template string (JSON `{ template, data, partials }` payload) | Anyone       |
+| `Hyperengine-Set`            | `Key`             | Creates/updates a template                                        | Permitted    |
+| `Hyperengine-Remove`         | `Key`             | Deletes a template                                                | Permitted    |
+| `Hyperengine-Grant-Role` | `Address`, `Role` | Grants an ACL role to an address        | Owner/Admin  |
+| `Hyperengine-Revoke-Role`| `Address`, `Role` | Revokes an ACL role from an address     | Owner/Admin  |
+| `Hyperengine-Get-Roles`  | `Address`         | Returns roles for an address (or all)   | Anyone       |
+| `Hyperengine-Publish-Template` | `Key`, `Path`, `State-Path`? | Publishes a rendered template at a patch path. Optional `State-Path` references a Lua global for live data. | Permitted |
+| `Hyperengine-Unpublish-Template` | `Path`       | Removes a published template from a patch path | Permitted |
+| `Hyperengine-List-Published` |                   | Returns JSON of all published templates (`{ path: { key, statePath } }`) | Anyone |
 
-Mutation operations (`Set`, `Remove`, `Publish-Template`, `Unpublish-Template`) are guarded by a permission check — the caller must be the process Owner, have the `admin` role, or have been granted the specific action (e.g. `Hyperstache-Set`).
+Mutation operations (`Set`, `Remove`, `Publish-Template`, `Unpublish-Template`) are guarded by a permission check — the caller must be the process Owner, have the `admin` role, or have been granted the specific action (e.g. `Hyperengine-Set`).
 
 You can also register handlers manually from your process code:
 
 ```lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 hs.handlers()  -- registers all twelve handlers
 ```
 
@@ -604,7 +604,7 @@ hs.handlers()  -- registers all twelve handlers
 
 The runtime includes a role-based access control system. The process **Owner** always has full access. Other addresses can be granted per-action permissions or the `admin` role, which grants all write permissions plus the ability to manage roles for others.
 
-ACL state is stored in the lowercase global `hyperstache_acl` (auto-persisted by AO across reloads).
+ACL state is stored in the lowercase global `hyperengine_acl` (auto-persisted by AO across reloads).
 
 #### Granting Roles
 
@@ -614,8 +614,8 @@ Grant a specific action to an address:
 -- From AO messages:
 Send({
   Target = process_id,
-  Action = 'Hyperstache-Grant-Role',
-  Tags = { Address = 'some-wallet-address', Role = 'Hyperstache-Set' }
+  Action = 'Hyperengine-Grant-Role',
+  Tags = { Address = 'some-wallet-address', Role = 'Hyperengine-Set' }
 })
 ```
 
@@ -624,16 +624,16 @@ Valid role values:
 | Role                | Effect                                         |
 |---------------------|-------------------------------------------------|
 | `admin`             | All write actions + can grant/revoke non-admin roles |
-| `Hyperstache-Set`   | Can create/update templates                     |
-| `Hyperstache-Remove`| Can delete templates                            |
+| `Hyperengine-Set`   | Can create/update templates                     |
+| `Hyperengine-Remove`| Can delete templates                            |
 
 Revoke a role the same way:
 
 ```lua
 Send({
   Target = process_id,
-  Action = 'Hyperstache-Revoke-Role',
-  Tags = { Address = 'some-wallet-address', Role = 'Hyperstache-Set' }
+  Action = 'Hyperengine-Revoke-Role',
+  Tags = { Address = 'some-wallet-address', Role = 'Hyperengine-Set' }
 })
 ```
 
@@ -642,41 +642,41 @@ Query roles for an address (public):
 ```lua
 Send({
   Target = process_id,
-  Action = 'Hyperstache-Get-Roles',
+  Action = 'Hyperengine-Get-Roles',
   Tags = { Address = 'some-wallet-address' }
 })
--- Returns: newline-separated role names, e.g. "Hyperstache-Set\nHyperstache-Remove"
+-- Returns: newline-separated role names, e.g. "Hyperengine-Set\nHyperengine-Remove"
 
 -- Omit Address to get all ACL entries:
-Send({ Target = process_id, Action = 'Hyperstache-Get-Roles' })
+Send({ Target = process_id, Action = 'Hyperengine-Get-Roles' })
 -- Returns: "address1:role1,role2\naddress2:role3"
 ```
 
 #### Admin Delegation
 
 - The **Owner** can grant and revoke any role, including `admin`
-- An **admin** can grant and revoke per-action roles (`Hyperstache-Set`, `Hyperstache-Remove`) but **cannot** grant or revoke the `admin` role — only the Owner can escalate or de-escalate admin privileges
+- An **admin** can grant and revoke per-action roles (`Hyperengine-Set`, `Hyperengine-Remove`) but **cannot** grant or revoke the `admin` role — only the Owner can escalate or de-escalate admin privileges
 
 #### ACL API
 
 The ACL functions are also available directly in Lua:
 
 ```lua
-local hs = require('hyperstache')
+local hs = require('hyperengine')
 
 -- Check if an address has permission for an action
-hs.has_permission(address, 'Hyperstache-Set')  -- true/false
+hs.has_permission(address, 'Hyperengine-Set')  -- true/false
 
 -- Grant a role
-hs.grant(address, 'Hyperstache-Set')
+hs.grant(address, 'Hyperengine-Set')
 
 -- Revoke a role (cleans up empty entries)
-hs.revoke(address, 'Hyperstache-Set')
+hs.revoke(address, 'Hyperengine-Set')
 
--- Get roles for an address (returns table, e.g. { ["Hyperstache-Set"] = true })
+-- Get roles for an address (returns table, e.g. { ["Hyperengine-Set"] = true })
 hs.get_roles(address)
 
--- Get all ACL entries (returns full hyperstache_acl table)
+-- Get all ACL entries (returns full hyperengine_acl table)
 hs.get_roles()
 ```
 
@@ -695,14 +695,14 @@ export default defineConfig({
 
 ### Admin Interface
 
-Hyperstache includes an optional admin UI for managing templates and ACL directly from a browser. Unlike most bundler internals, the admin files are **scaffolded into your project** as separate HTML, CSS, JS, and Lua files that you can freely customize.
+Hyperengine includes an optional admin UI for managing templates and ACL directly from a browser. Unlike most bundler internals, the admin files are **scaffolded into your project** as separate HTML, CSS, JS, and Lua files that you can freely customize.
 
 #### Scaffolding
 
 Use the `--admin` flag when creating a new project:
 
 ```bash
-npx hyperstache create my-app --admin
+npx hyperengine create my-app --admin
 ```
 
 This creates the following files under `src/admin/`:
@@ -712,7 +712,7 @@ This creates the following files under `src/admin/`:
 | `template.html`           | Admin UI layout — mustache template with header, nav, body, and footer partials |
 | `styles.css`              | Admin UI styles (dark theme, GitHub Primer-inspired)            |
 | `admin.js`                | Frontend logic — tab switching, template CRUD, ACL management, publish management |
-| `init.lua`                | Lua module — publishes admin routes via `hyperstache.publishTemplate` |
+| `init.lua`                | Lua module — publishes admin routes via `hyperengine.publishTemplate` |
 | `pages/index.mu`          | Home page partial                                               |
 | `pages/templates.mu`      | Templates management page partial                               |
 | `pages/publish.mu`        | Publish management page partial                                 |
@@ -727,7 +727,7 @@ All four files are fully editable. The HTML references the CSS and JS via standa
 The scaffolded config enables ESM mode and adds `@permaweb/aoconnect` as a Vite external (loaded via import map from Arweave):
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -746,11 +746,11 @@ export default defineConfig({
 })
 ```
 
-Enabling `adminInterface` automatically enables `handlers` — the admin UI communicates with the process through the existing `Hyperstache-*` message handlers.
+Enabling `adminInterface` automatically enables `handlers` — the admin UI communicates with the process through the existing `Hyperengine-*` message handlers.
 
 #### How It Works
 
-At build time, hyperstache:
+At build time, hyperengine:
 
 1. **Resolves** `src/admin/init.lua` as a regular Lua module (name: `admin`)
 2. **Collects** HTML and mustache files from `src/admin/` as admin templates (prefixed with `admin/`, e.g. `admin/template.html`, `admin/pages/index.mu`)
@@ -760,9 +760,9 @@ At build time, hyperstache:
 
 The admin Lua module:
 
-- **Auto-initializes on load** — when the bundler auto-requires the admin module, `admin.publish()` fires automatically, publishing each admin route via `hyperstache.publishTemplate()` with mustache partials for header, nav, body, and footer. The user's `hyperstache.publish()` call in the entry point then sends the full state — including the admin pages — in a single message.
-- **Publishes to `patch@1.0`** after every mutation (template Set/Remove, role Grant/Revoke) via `hyperstache.publish()`, which sends the full accumulated state
-- **Stores the rendered HTML** in the `hyperstache_admin` global (auto-persisted by AO)
+- **Auto-initializes on load** — when the bundler auto-requires the admin module, `admin.publish()` fires automatically, publishing each admin route via `hyperengine.publishTemplate()` with mustache partials for header, nav, body, and footer. The user's `hyperengine.publish()` call in the entry point then sends the full state — including the admin pages — in a single message.
+- **Publishes to `patch@1.0`** after every mutation (template Set/Remove, role Grant/Revoke) via `hyperengine.publish()`, which sends the full accumulated state
+- **Stores the rendered HTML** in the `hyperengine_admin` global (auto-persisted by AO)
 
 The admin UI has four sections:
 
@@ -775,7 +775,7 @@ The admin UI has four sections:
 
 #### Custom Path Key
 
-By default, the admin UI is registered under the `admin` key inside the `patchKey` namespace (default `"ui"`) via `hyperstache.patch({ admin = html })` on init, and sent via `hyperstache.publish()` on mutations. To use a different path key, configure it in your config:
+By default, the admin UI is registered under the `admin` key inside the `patchKey` namespace (default `"ui"`) via `hyperengine.patch({ admin = html })` on init, and sent via `hyperengine.publish()` on mutations. To use a different path key, configure it in your config:
 
 ```ts
 export default defineConfig({
@@ -836,10 +836,10 @@ export default defineConfig({
 
 ## AOS Module Build
 
-By default, hyperstache outputs a single self-contained `process.lua`. If you want to build your process as a **module** for the [ao CLI](https://github.com/permaweb/aos) `build` command, add the `aos` option to your config:
+By default, hyperengine outputs a single self-contained `process.lua`. If you want to build your process as a **module** for the [ao CLI](https://github.com/permaweb/aos) `build` command, add the `aos` option to your config:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -944,7 +944,7 @@ module_format: 'wasm32-unknown-emscripten-metering'
 
 ### Caching
 
-The cloned aos repo is cached at `node_modules/.cache/hyperstache/aos-{commit}` so subsequent builds don't re-clone. Delete this directory to force a fresh clone.
+The cloned aos repo is cached at `node_modules/.cache/hyperengine/aos-{commit}` so subsequent builds don't re-clone. Delete this directory to force a fresh clone.
 
 ### Requirements
 
@@ -953,7 +953,7 @@ The cloned aos repo is cached at `node_modules/.cache/hyperstache/aos-{commit}` 
 
 ## Deploy & Publish
 
-Hyperstache includes built-in commands for deploying AO processes and publishing modules to Arweave.
+Hyperengine includes built-in commands for deploying AO processes and publishing modules to Arweave.
 
 Deploy spawns new AO processes and loads your bundled Lua into them. Publish uploads WASM or Lua modules to Arweave for use as custom AO modules.
 
@@ -962,7 +962,7 @@ Deploy spawns new AO processes and loads your bundled Lua into them. Publish upl
 Configure deploy settings in your config file and/or via environment variables:
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -988,13 +988,13 @@ export default defineConfig({
 | `spawnTags`    |                 | Extra `{ name, value }` tags included on spawn messages         | `[]`    |
 | `actionTags`   |                 | Extra `{ name, value }` tags included on Eval action messages   | `[]`    |
 
-When `hyperbeamUrl` is set and neither `scheduler` nor `authority` are provided, Hyperstache will automatically fetch the node's wallet address from `<hyperbeamUrl>/~meta@1.0/info/address` and use it for both values.
+When `hyperbeamUrl` is set and neither `scheduler` nor `authority` are provided, Hyperengine will automatically fetch the node's wallet address from `<hyperbeamUrl>/~meta@1.0/info/address` and use it for both values.
 
 Environment variables take precedence over config file values.
 
 ### .env File Support
 
-Hyperstache automatically loads a `.env` file from your project root when running any CLI command. Variables defined in `.env` are applied to `process.env` **without overwriting** existing environment variables.
+Hyperengine automatically loads a `.env` file from your project root when running any CLI command. Variables defined in `.env` are applied to `process.env` **without overwriting** existing environment variables.
 
 ```bash
 # .env
@@ -1002,7 +1002,7 @@ WALLET_PATH=./wallet.json
 HYPERBEAM_URL=https://your-hyperbeam-node.example
 ```
 
-A `.env.example` file is included in scaffolded projects (via `npx hyperstache create`). Copy it to `.env` and fill in your values:
+A `.env.example` file is included in scaffolded projects (via `npx hyperengine create`). Copy it to `.env` and fill in your values:
 
 ```bash
 cp .env.example .env
@@ -1020,16 +1020,16 @@ For standard processes (`type: 'process'` or default), deploy:
 
 ```bash
 # Build first
-npx hyperstache build
+npx hyperengine build
 
 # Deploy all processes
-npx hyperstache deploy
+npx hyperengine deploy
 
 # Deploy a specific process
-npx hyperstache deploy --process main
+npx hyperengine deploy --process main
 
 # See detailed step-by-step logs
-npx hyperstache deploy --verbose
+npx hyperengine deploy --verbose
 ```
 
 ### Module Build Deploy
@@ -1040,7 +1040,7 @@ For processes with a published WASM module (built via `ao build`):
 2. Spawns a new AO process using that custom module
 3. No Eval step — the code is baked into the WASM module
 
-You must run `hyperstache publish` before deploying a WASM module build.
+You must run `hyperengine publish` before deploying a WASM module build.
 
 Alternatively, set the `moduleId` directly in config:
 
@@ -1056,7 +1056,7 @@ export default defineConfig({
 })
 ```
 
-> **Note:** Processes with `type: 'module'` (dynamic read modules) are **publish-only** — they cannot be deployed as standalone AO processes. Use `hyperstache publish` for these.
+> **Note:** Processes with `type: 'module'` (dynamic read modules) are **publish-only** — they cannot be deployed as standalone AO processes. Use `hyperengine publish` for these.
 
 ### Publishing Modules
 
@@ -1067,20 +1067,20 @@ The `publish` command uploads build artifacts to Arweave via [Turbo](https://ard
 
 ```bash
 # Publish all processes
-npx hyperstache publish
+npx hyperengine publish
 
 # Publish a specific process
-npx hyperstache publish --process reader
+npx hyperengine publish --process reader
 
 # See upload details and timing
-npx hyperstache publish --verbose
+npx hyperengine publish --verbose
 ```
 
 The returned transaction ID is saved to the deploy manifest and used as the `moduleId` for subsequent `deploy` commands.
 
 ### Deploy Manifest
 
-Deploy and publish results are saved to `.hyperstache/deploy.json` in your project root:
+Deploy and publish results are saved to `.hyperengine/deploy.json` in your project root:
 
 ```json
 {
@@ -1100,7 +1100,7 @@ This file is gitignored by default in scaffolded projects. The manifest allows `
 
 ```
 my-ao-app/
-  hyperstache.config.ts
+  hyperengine.config.ts
   package.json
   src/
     process.lua
@@ -1140,36 +1140,36 @@ and made available via `require('templates')` as a table keyed by relative path.
 
 ```bash
 # Create a new project
-hyperstache create [name] [--typescript] [--esm] [--admin] [--directory <dir>]
+hyperengine create [name] [--typescript] [--esm] [--admin] [--directory <dir>]
 
 # Bundle all processes
-hyperstache build
+hyperengine build
 
 # Bundle a specific process
-hyperstache build --process main
+hyperengine build --process main
 
 # Generate a .rockspec from config
-hyperstache rockspec
+hyperengine rockspec
 
 # Publish modules to Arweave
-hyperstache publish
-hyperstache publish --process reader
+hyperengine publish
+hyperengine publish --process reader
 
 # Deploy (spawn) AO processes
-hyperstache deploy
-hyperstache deploy --process main
+hyperengine deploy
+hyperengine deploy --process main
 
 # Verbose output (config, file ops, network status, timing)
-hyperstache deploy --verbose
-hyperstache publish --verbose
+hyperengine deploy --verbose
+hyperengine publish --verbose
 
 # Debug output (all verbose info + payloads and raw responses)
-hyperstache deploy --debug
+hyperengine deploy --debug
 ```
 
 | Command    | Description                                                      |
 |------------|------------------------------------------------------------------|
-| `create`   | Scaffold a new hyperstache project                               |
+| `create`   | Scaffold a new hyperengine project                               |
 | `build`    | Resolve Lua modules, inline templates, emit `.lua` bundles       |
 | `rockspec` | Generate a `.rockspec` file from luarocks config                 |
 | `publish`  | Upload WASM or Lua modules to Arweave via Turbo                  |
@@ -1197,7 +1197,7 @@ Options for `create`:
 ## Configuration
 
 ```ts
-import { defineConfig } from 'hyperstache'
+import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   // Named process definitions (required)
@@ -1209,7 +1209,7 @@ export default defineConfig({
       templates: { /* ... */ },     // Per-process template overrides
       luarocks: { /* ... */ },      // Per-process luarocks overrides
       patchKey: 'ui',              // Per-process patchKey override
-      stateKey: 'hyperstache_state', // Per-process stateKey override
+      stateKey: 'hyperengine_state', // Per-process stateKey override
       runtime: true,                // Per-process runtime override
     },
   },
@@ -1221,9 +1221,9 @@ export default defineConfig({
   // Nesting under this key prevents raw HTML in message headers
   patchKey: 'ui',
 
-  // Key under which template and ACL state is synced to patch@1.0 (default: "hyperstache_state")
+  // Key under which template and ACL state is synced to patch@1.0 (default: "hyperengine_state")
   // State is nested as { templates: ..., acl: ... } under this key
-  stateKey: 'hyperstache_state',
+  stateKey: 'hyperengine_state',
 
   // Shared template defaults
   templates: {
@@ -1268,7 +1268,7 @@ export default defineConfig({
 ### Full Config Interface
 
 ```ts
-interface HyperstacheConfig {
+interface HyperengineConfig {
   /** Lua entry point */
   entry: string
 
@@ -1310,7 +1310,7 @@ interface HyperstacheConfig {
     luaVersion?: string
   }
 
-  /** Include the hyperstache runtime module for post-deploy template management */
+  /** Include the hyperengine runtime module for post-deploy template management */
   runtime?: boolean | {
     /** Auto-register AO message handlers for template CRUD */
     handlers?: boolean
@@ -1367,7 +1367,7 @@ interface HyperstacheConfig {
 1. **Resolve** — Parses `require()` calls from the entry Lua file, recursively resolves modules from the project source tree and `lua_modules/` (luarocks local install)
 2. **Collect** — Globs template files, reads them, wraps each in Lua long-string brackets. If the admin interface is enabled, collects admin HTML files from `src/admin/` (prefixed with `admin/`) and merges them with user templates.
 3. **Render** *(optional)* — If `templates.vite` is enabled, processes `.html` templates through Vite: escapes Mustache syntax, runs Vite build to compile and inline CSS/JS assets, restores Mustache syntax. Admin templates are processed alongside user templates in a single Vite build.
-4. **Emit** — Wraps each module in a function, generates a `require`-compatible loader, bundles the [lustache](https://github.com/Olivine-Labs/lustache) template engine, inlines templates as a virtual `require('templates')` module, optionally includes the `require('hyperstache')` runtime module, and appends the entry point source
+4. **Emit** — Wraps each module in a function, generates a `require`-compatible loader, bundles the [lustache](https://github.com/Olivine-Labs/lustache) template engine, inlines templates as a virtual `require('templates')` module, optionally includes the `require('hyperengine')` runtime module, and appends the entry point source
 5. **Output** — Writes a single flat `.lua` file to `outDir/outFile`
 6. **AOS Module** *(optional)* — If `aos` is configured, wraps the bundle as a Lua module, clones the aos repo at the specified commit, copies its `process/` Lua files to the output directory, injects `require("{processName}")` into the aos `process.lua`, and generates a `config.yml` with ao-dev-cli build options
 
@@ -1375,10 +1375,10 @@ The output is self-contained and runs in AO's Lua runtime without external depen
 
 ## Rockspec Generation
 
-The `hyperstache rockspec` command generates a `.rockspec` file from the `luarocks` section of your config. This is useful when you have additional Lua dependencies beyond the built-in lustache engine:
+The `hyperengine rockspec` command generates a `.rockspec` file from the `luarocks` section of your config. This is useful when you have additional Lua dependencies beyond the built-in lustache engine:
 
 ```bash
-npx hyperstache rockspec
+npx hyperengine rockspec
 luarocks install --local --tree lua_modules my-app-0.1.0-1.rockspec
 ```
 

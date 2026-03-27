@@ -34,7 +34,7 @@ describe('createProject', () => {
     '.env.example',
     '.gitignore',
     'README.md',
-    'hyperstache.config.ts',
+    'hyperengine.config.ts',
     'package.json',
     'src/lib/utils.lua',
     'src/process.lua',
@@ -54,7 +54,7 @@ describe('createProject', () => {
       await createProject('my-app', {}, tmp)
       const pkg = JSON.parse(await readFile(join(tmp, 'my-app/package.json'), 'utf-8'))
       expect(pkg.devDependencies.vite).toBeDefined()
-      expect(pkg.scripts.dev).toBe('hyperstache dev')
+      expect(pkg.scripts.dev).toBe('hyperengine dev')
     })
 
     it('does not include luarocks-install script', async () => {
@@ -65,13 +65,13 @@ describe('createProject', () => {
 
     it('config enables templates.vite', async () => {
       await createProject('my-app', {}, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('vite: true')
     })
 
     it('config does not contain esm', async () => {
       await createProject('my-app', {}, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).not.toContain('esm')
     })
 
@@ -122,7 +122,7 @@ describe('createProject', () => {
 
     it('config contains esm: true', async () => {
       await createProject('my-app', { esm: true }, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('esm: true')
     })
 
@@ -139,7 +139,7 @@ describe('createProject', () => {
       const files = await listFiles(join(tmp, 'my-app'))
       expect(files).toContain('tsconfig.json')
       expect(files).toContain('src/templates/app.ts')
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('esm: true')
     })
 
@@ -182,26 +182,26 @@ describe('createProject', () => {
 
     it('config includes adminInterface: true', async () => {
       await createProject('my-app', { admin: true }, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('adminInterface: true')
     })
 
     it('config includes handlers: true when admin is set', async () => {
       await createProject('my-app', { admin: true }, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('handlers: true')
     })
 
     it('config has handlers and adminInterface with admin', async () => {
       await createProject('my-app', { admin: true }, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('handlers: true')
       expect(config).toContain('adminInterface: true')
     })
 
     it('config enables esm and aoconnect external for admin', async () => {
       await createProject('my-app', { admin: true }, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('esm: true')
       expect(config).toContain('@permaweb/aoconnect')
     })
@@ -216,13 +216,13 @@ describe('createProject', () => {
       await createProject('my-app', { admin: true }, tmp)
       const lua = await readFile(join(tmp, 'my-app/src/admin/init.lua'), 'utf-8')
       expect(lua).toContain('admin.publish()')
-      expect(lua).toContain('hyperstache.publishTemplate,')
+      expect(lua).toContain('hyperengine.publishTemplate,')
       expect(lua).toContain('return admin')
     })
 
     it('config does not include runtime block without admin flag', async () => {
       await createProject('my-app', {}, tmp)
-      const config = await readFile(join(tmp, 'my-app/hyperstache.config.ts'), 'utf-8')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).not.toContain('adminInterface')
       expect(config).not.toContain('handlers:')
     })
@@ -267,7 +267,7 @@ describe('createProject', () => {
 
       it(`${label}: config does not include luarocks block`, async () => {
         await createProject('test-proj', flags, tmp)
-        const config = await readFile(join(tmp, 'test-proj/hyperstache.config.ts'), 'utf-8')
+        const config = await readFile(join(tmp, 'test-proj/hyperengine.config.ts'), 'utf-8')
         expect(config).not.toContain('lustache')
         expect(config).not.toContain('luarocks')
       })
@@ -294,8 +294,8 @@ describe('createProject', () => {
       expect(logs.some(l => l.includes('cd my-app'))).toBe(true)
       expect(logs.some(l => l.includes('Created my-app/'))).toBe(true)
       expect(logs.some(l => l.includes('npm run luarocks-install'))).toBe(false)
-      expect(logs.some(l => l.includes('npx hyperstache build'))).toBe(true)
-      expect(logs.some(l => l.includes('npx hyperstache dev'))).toBe(false)
+      expect(logs.some(l => l.includes('npx hyperengine build'))).toBe(true)
+      expect(logs.some(l => l.includes('npx hyperengine dev'))).toBe(false)
     })
 
     it('uses relative path when projectDir is under cwd', () => {

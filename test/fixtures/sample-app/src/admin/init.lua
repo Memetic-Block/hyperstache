@@ -1,4 +1,4 @@
-local hyperstache = require("hyperstache")
+local hyperengine = require("hyperengine")
 local templates = require("templates")
 
 local admin = {}
@@ -7,27 +7,27 @@ local _path = "admin"
 
 function admin.render()
   local html = templates["admin/index.html"]:gsub("__PROCESS_ID__", ao.id)
-  hyperstache_admin = html
+  hyperengine_admin = html
   return html
 end
 
 function admin.publish()
-  if not hyperstache_admin then
+  if not hyperengine_admin then
     admin.render()
   end
-  hyperstache.publish({ [_path] = hyperstache_admin })
+  hyperengine.publish({ [_path] = hyperengine_admin })
 end
 
 function admin.handlers()
   admin.render()
-  hyperstache.patch({ [_path] = hyperstache_admin })
+  hyperengine.patch({ [_path] = hyperengine_admin })
 
-  Handlers.append("Hyperstache-Admin-Sync-Set",
-    Handlers.utils.hasMatchingTag("Action", "Hyperstache-Set"),
+  Handlers.append("Hyperengine-Admin-Sync-Set",
+    Handlers.utils.hasMatchingTag("Action", "Hyperengine-Set"),
     function(msg)
-      if hyperstache.has_permission(msg.From, "Hyperstache-Set") then
+      if hyperengine.has_permission(msg.From, "Hyperengine-Set") then
         admin.render()
-        hyperstache.publish({ [_path] = hyperstache_admin })
+        hyperengine.publish({ [_path] = hyperengine_admin })
       end
     end
   )

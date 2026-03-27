@@ -243,7 +243,7 @@ describe('multi-process bundling', () => {
     const reader = results.find(r => r.processName === 'reader')!
 
     // Should use raw emitBundle (no _init wrapper)
-    expect(reader.output).toContain('-- Bundled by hyperstache')
+    expect(reader.output).toContain('-- Bundled by hyperengine')
     expect(reader.output).toContain('local _modules = {}')
     expect(reader.output).not.toContain('local function _init()')
     expect(reader.output).not.toContain('return {}')
@@ -277,7 +277,7 @@ describe('multi-process bundling', () => {
     const result = await bundleProcess(readerProc, config.aos)
 
     // Raw output, no _init wrapper
-    expect(result.output).toContain('-- Bundled by hyperstache')
+    expect(result.output).toContain('-- Bundled by hyperengine')
     expect(result.output).not.toContain('local function _init()')
 
     // AOS completely skipped

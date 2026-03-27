@@ -1,6 +1,6 @@
 <div id="publish">
   <div id="published-list" class="list">
-    {{#hyperstache_state.published}}
+    {{#hyperengine_state.published}}
     <div class="list-item">
       <a href="../{{path}}" target="_blank">/{{path}} &rarr; {{template_name}}</a>
       <div class="actions">
@@ -11,10 +11,10 @@
         >Unpublish</button>
       </div>
     </div>
-    {{/hyperstache_state.published}}
-    {{^hyperstache_state.published}}
+    {{/hyperengine_state.published}}
+    {{^hyperengine_state.published}}
     <div class="list-empty">Nothing published</div>
-    {{/hyperstache_state.published}}
+    {{/hyperengine_state.published}}
   </div>
   <div id="publish-form" style="margin-top:1rem;">
     <div id="publish-status"></div>
@@ -22,9 +22,9 @@
       <label for="publish-key">Template</label>
       <select id="publish-key">
         <option value="">Select...</option>
-        {{#hyperstache_state.templates}}
+        {{#hyperengine_state.templates}}
         <option value="{{.}}">{{.}}</option>
-        {{/hyperstache_state.templates}}
+        {{/hyperengine_state.templates}}
       </select>
     </div>
     <div class="field">

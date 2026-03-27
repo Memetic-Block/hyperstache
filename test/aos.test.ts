@@ -8,7 +8,7 @@ describe('injectRequire', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = join(tmpdir(), `hyperstache-aos-test-${Date.now()}`)
+    dir = join(tmpdir(), `hyperengine-aos-test-${Date.now()}`)
     await mkdir(dir, { recursive: true })
   })
 
@@ -125,7 +125,7 @@ describe('copyAosProcessFiles', () => {
   let destDir: string
 
   beforeEach(async () => {
-    const base = join(tmpdir(), `hyperstache-copy-test-${Date.now()}`)
+    const base = join(tmpdir(), `hyperengine-copy-test-${Date.now()}`)
     srcDir = join(base, 'repo')
     destDir = join(base, 'out')
     await mkdir(join(srcDir, 'process', 'libs'), { recursive: true })
@@ -216,7 +216,7 @@ describe('writeAosYaml', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = join(tmpdir(), `hyperstache-yaml-test-${Date.now()}`)
+    dir = join(tmpdir(), `hyperengine-yaml-test-${Date.now()}`)
     await mkdir(dir, { recursive: true })
   })
 
@@ -262,7 +262,7 @@ describe('stripRequires', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = join(tmpdir(), `hyperstache-strip-test-${Date.now()}`)
+    dir = join(tmpdir(), `hyperengine-strip-test-${Date.now()}`)
     await mkdir(dir, { recursive: true })
   })
 

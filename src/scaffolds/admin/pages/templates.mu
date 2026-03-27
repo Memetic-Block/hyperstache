@@ -1,6 +1,6 @@
 <div id="templates">
   <div id="template-list" class="list">
-    {{#hyperstache_state.templates}}
+    {{#hyperengine_state.templates}}
     <div class="list-item">
       <span data-key="{{.}}" onclick="onEditTemplateClicked(event)('{{.}}')">{{.}}</span>
       <div class="actions">
@@ -8,10 +8,10 @@
         <button class="danger action-button" onclick="onDeleteTemplateClicked(event)('{{.}}')">Delete</button>
       </div>
     </div>
-    {{/hyperstache_state.templates}}
-    {{^hyperstache_state.templates}}
+    {{/hyperengine_state.templates}}
+    {{^hyperengine_state.templates}}
     <div class="list-empty">No templates</div>
-    {{/hyperstache_state.templates}}
+    {{/hyperengine_state.templates}}
   </div>
   <div id="template-editor" style="margin-top:1rem;">
     <div id="editor-status"></div>

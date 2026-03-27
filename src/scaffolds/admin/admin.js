@@ -2,7 +2,7 @@ import { connect, createSigner } from '@permaweb/aoconnect'
 
 const PROCESS_ID = window.AO_ENV.Process.Id;
 const HB_URL = window.location.protocol + '//' + window.location.host;
-console.log('Admin interface for process', PROCESS_ID, 'on with ao.env', window.AO_ENV, 'and initial state', window.HYPERSTACHE_STATE);
+console.log('Admin interface for process', PROCESS_ID, 'on with ao.env', window.AO_ENV, 'and initial state', window.HYPERENGINE_STATE);
 const ao = connect({
   MODE: 'mainnet',
   signer: createSigner(window.arweaveWallet),
@@ -49,7 +49,7 @@ window.showMessageResult = (el, msg, ok) => {
 }
 
 window.fetchTemplate = async (template_key) => {
-  const res = await fetch(`${HB_URL}/${PROCESS_ID}/now/hyperstache_templates/${template_key}`)
+  const res = await fetch(`${HB_URL}/${PROCESS_ID}/now/hyperengine_templates/${template_key}`)
   if (!res.ok) throw new Error('Failed to fetch template: ' + res.statusText);
   const template = await res.text();
   console.log('got template', template_key, template.length)
@@ -71,7 +71,7 @@ window.onGrantRoleClicked = async () => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Grant-Role', { Address: addr, Role: role });
+    await window.sendActionMessage('Hyperengine-Grant-Role', { Address: addr, Role: role });
     window.showMessageResult(grantStatus, 'Granted', true);
     window.location.reload();
   } catch (err) {
@@ -96,7 +96,7 @@ window.onRevokeRoleClicked = (evt) => async (addr, role) => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Revoke-Role', { Address: addr, Role: role.trim() });
+    await window.sendActionMessage('Hyperengine-Revoke-Role', { Address: addr, Role: role.trim() });
     window.showMessageResult(grantStatus, 'Revoked', true);
     window.location.reload();
   } catch (err) {
@@ -148,7 +148,7 @@ window.onDeleteTemplateClicked = (evt) => async (templateKey) => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Remove', { ['Template-Key']: templateKey });
+    await window.sendActionMessage('Hyperengine-Remove', { ['Template-Key']: templateKey });
     window.location.reload();
   } catch (err) {
     console.error(err);
@@ -169,7 +169,7 @@ window.onSaveTemplateClicked = async () => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Set', { ['Template-Key']: key }, content);
+    await window.sendActionMessage('Hyperengine-Set', { ['Template-Key']: key }, content);
     window.showMessageResult(editorStatus, 'Saved', true);
     window.location.reload();
   } catch (err) {
@@ -216,7 +216,7 @@ window.onPublishTemplateClicked = async () => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Publish-Template', tags);
+    await window.sendActionMessage('Hyperengine-Publish-Template', tags);
     window.showMessageResult(publishStatus, 'Published', true);
     window.location.reload();
   } catch (err) {
@@ -237,7 +237,7 @@ window.onUnpublishTemplateClicked = (evt) => async (path) => {
     for (const btn of actionButtons) {
       btn.disabled = 'disabled';
     }
-    await window.sendActionMessage('Hyperstache-Unpublish-Template', { ['Publish-Path']: path });
+    await window.sendActionMessage('Hyperengine-Unpublish-Template', { ['Publish-Path']: path });
     window.showMessageResult(publishStatus, 'Unpublished', true);
     window.location.reload();
   } catch (err) {

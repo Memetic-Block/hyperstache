@@ -98,7 +98,7 @@ export async function deployProcess(
     if (!moduleId) {
       throw new Error(
         `No module ID found for "${proc.name}". ` +
-        `Run \`hyperstache publish --process ${proc.name}\` first to upload the WASM module.`,
+        `Run \`hyperengine publish --process ${proc.name}\` first to upload the WASM module.`,
       )
     }
     logger.verbose(`Resolved moduleId: ${moduleId} (source: ${proc.moduleId ? 'config' : 'manifest'})`)
@@ -135,7 +135,7 @@ export async function deployProcess(
     const luaPath = join(proc.outDir, proc.outFile)
     if (!(await fileExists(luaPath))) {
       throw new Error(
-        `No build output found for "${proc.name}". Run \`hyperstache build\` first.\n` +
+        `No build output found for "${proc.name}". Run \`hyperengine build\` first.\n` +
         `  Expected: ${luaPath}`,
       )
     }

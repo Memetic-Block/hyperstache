@@ -50,8 +50,8 @@ describe('pathToModuleName', () => {
 })
 
 describe('resolveModules', () => {
-  it('does not mark hyperstache as unresolved', async () => {
-    // Simulate a process that requires 'hyperstache' — it should be
+  it('does not mark hyperengine as unresolved', async () => {
+    // Simulate a process that requires 'hyperengine' — it should be
     // skipped like 'templates', not listed as unresolved.
     const { resolveModules } = await import('../src/bundler/resolver.js')
     const { resolve } = await import('node:path')
@@ -80,10 +80,10 @@ describe('resolveModules', () => {
 
     const result = await resolveModules(config)
 
-    // The sample-app process requires 'templates', 'lustache', and 'hyperstache'
+    // The sample-app process requires 'templates', 'lustache', and 'hyperengine'
     // — all are auto-generated/bundled modules and should be skipped
     expect(result.unresolved).not.toContain('templates')
-    expect(result.unresolved).not.toContain('hyperstache')
+    expect(result.unresolved).not.toContain('hyperengine')
     expect(result.unresolved).not.toContain('lustache')
   })
 })

@@ -7,11 +7,11 @@ const execFileAsync = promisify(execFile)
 
 /**
  * Ensure the aos repo is cloned and checked out at the given commit.
- * Caches in `{root}/node_modules/.cache/hyperstache/aos-{commit}`.
+ * Caches in `{root}/node_modules/.cache/hyperengine/aos-{commit}`.
  * Returns the path to the cached repo.
  */
 export async function ensureAosRepo(commit: string, root: string): Promise<string> {
-  const cacheDir = join(root, 'node_modules', '.cache', 'hyperstache', `aos-${commit}`)
+  const cacheDir = join(root, 'node_modules', '.cache', 'hyperengine', `aos-${commit}`)
   const marker = join(cacheDir, '.complete')
 
   // Check if already cached

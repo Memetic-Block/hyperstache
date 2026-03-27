@@ -62,7 +62,7 @@ describe('bundle integration', () => {
 
     // Runtime always included
     expect(result.runtimeIncluded).toBe(true)
-    expect(result.output).toContain('_modules["hyperstache"]')
+    expect(result.output).toContain('_modules["hyperengine"]')
   })
 
   it('bundles with runtime module included by default', async () => {
@@ -81,14 +81,14 @@ describe('bundle integration', () => {
     const result = results[0]
 
     expect(result.runtimeIncluded).toBe(true)
-    expect(result.output).toContain('_modules["hyperstache"]')
-    expect(result.output).toContain('hyperstache_templates')
-    expect(result.output).toContain('function hyperstache.get(key)')
-    expect(result.output).toContain('function hyperstache.renderTemplate(key, data, partials)')
+    expect(result.output).toContain('_modules["hyperengine"]')
+    expect(result.output).toContain('hyperengine_templates')
+    expect(result.output).toContain('function hyperengine.get(key)')
+    expect(result.output).toContain('function hyperengine.renderTemplate(key, data, partials)')
 
     // Runtime module should appear after templates module
     const templatesIdx = result.output.indexOf('_modules["templates"]')
-    const runtimeIdx = result.output.indexOf('_modules["hyperstache"]')
+    const runtimeIdx = result.output.indexOf('_modules["hyperengine"]')
     expect(runtimeIdx).toBeGreaterThan(templatesIdx)
   })
 
@@ -112,11 +112,11 @@ describe('bundle integration', () => {
     // Should auto-require in entry section
     const entryIdx = result.output.indexOf('-- Entry point')
     const afterEntry = result.output.slice(entryIdx)
-    expect(afterEntry).toContain('require("hyperstache")')
+    expect(afterEntry).toContain('require("hyperengine")')
 
     // Should auto-register handlers inside the module
-    expect(result.output).toContain('Handlers.add("Hyperstache-Get"')
-    expect(result.output).toContain('hyperstache.handlers()')
+    expect(result.output).toContain('Handlers.add("Hyperengine-Get"')
+    expect(result.output).toContain('hyperengine.handlers()')
   })
 
   it('bundles with admin interface when enabled', async () => {
@@ -151,17 +151,17 @@ describe('bundle integration', () => {
     // Admin Lua should contain handler/publish logic
     expect(result.output).toContain('patch@1.0')
 
-    // Admin Lua should use hyperstache.patch() on init (no Send) and publish() on mutations
+    // Admin Lua should use hyperengine.patch() on init (no Send) and publish() on mutations
     const adminModIdx = result.output.indexOf('_modules["admin"]')
     const adminSection = result.output.slice(adminModIdx)
-    expect(adminSection).toContain('hyperstache.patch(')
-    expect(adminSection).toContain('hyperstache.publish(')
+    expect(adminSection).toContain('hyperengine.patch(')
+    expect(adminSection).toContain('hyperengine.publish(')
 
     // Admin module should auto-call admin.handlers() on load
     expect(adminSection).toContain('admin.handlers()')
 
     // Handlers should be forced on by adminInterface
-    expect(result.output).toContain('hyperstache.handlers()')
+    expect(result.output).toContain('hyperengine.handlers()')
   })
 
   it('bundles admin interface with custom dir option', async () => {

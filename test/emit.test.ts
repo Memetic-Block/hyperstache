@@ -66,17 +66,17 @@ describe('emitBundle', () => {
     ]
 
     const templatesLua = `local _templates = {}\nreturn _templates`
-    const runtimeLua = `local hyperstache = {}\nreturn hyperstache`
+    const runtimeLua = `local hyperengine = {}\nreturn hyperengine`
 
     const output = emitBundle(modules, templatesLua, runtimeLua)
 
     // Both modules should be registered
     expect(output).toContain('_modules["templates"]')
-    expect(output).toContain('_modules["hyperstache"]')
+    expect(output).toContain('_modules["hyperengine"]')
 
     // Runtime should appear after templates
     const templatesIdx = output.indexOf('_modules["templates"]')
-    const runtimeIdx = output.indexOf('_modules["hyperstache"]')
+    const runtimeIdx = output.indexOf('_modules["hyperengine"]')
     expect(runtimeIdx).toBeGreaterThan(templatesIdx)
   })
 
@@ -90,13 +90,13 @@ describe('emitBundle', () => {
       },
     ]
 
-    const runtimeLua = `local hyperstache = {}\nreturn hyperstache`
+    const runtimeLua = `local hyperengine = {}\nreturn hyperengine`
 
     const output = emitBundle(modules, null, runtimeLua, true)
 
     // Should have auto-require before entry point
     const entryIdx = output.indexOf('-- Entry point')
-    const requireIdx = output.indexOf('require("hyperstache")', entryIdx)
+    const requireIdx = output.indexOf('require("hyperengine")', entryIdx)
     expect(requireIdx).toBeGreaterThan(entryIdx)
   })
 
@@ -110,14 +110,14 @@ describe('emitBundle', () => {
       },
     ]
 
-    const runtimeLua = `local hyperstache = {}\nreturn hyperstache`
+    const runtimeLua = `local hyperengine = {}\nreturn hyperengine`
 
     const output = emitBundle(modules, null, runtimeLua, false)
 
     // Should NOT have auto-require in the entry section
     const entryIdx = output.indexOf('-- Entry point')
     const afterEntry = output.slice(entryIdx)
-    expect(afterEntry).not.toContain('require("hyperstache")')
+    expect(afterEntry).not.toContain('require("hyperengine")')
   })
 
   it('auto-requires additional modules when autoRequireModules is set', () => {
@@ -154,7 +154,7 @@ describe('emitBundle', () => {
     ]
 
     const templatesLua = `local _templates = {}\nreturn _templates`
-    const runtimeLua = `local hyperstache = {}\nreturn hyperstache`
+    const runtimeLua = `local hyperengine = {}\nreturn hyperengine`
     const lustacheModules = [
       { name: 'lustache.scanner', source: 'local scanner = {}\nreturn scanner' },
       { name: 'lustache.context', source: 'local context = {}\nreturn context' },
@@ -173,7 +173,7 @@ describe('emitBundle', () => {
     // Lustache modules should appear before templates and runtime
     const lustacheIdx = output.indexOf('_modules["lustache.scanner"]')
     const templatesIdx = output.indexOf('_modules["templates"]')
-    const runtimeIdx = output.indexOf('_modules["hyperstache"]')
+    const runtimeIdx = output.indexOf('_modules["hyperengine"]')
     expect(lustacheIdx).toBeLessThan(templatesIdx)
     expect(lustacheIdx).toBeLessThan(runtimeIdx)
   })
@@ -198,7 +198,7 @@ describe('emitModule', () => {
     expect(output).toContain('return {}')
 
     // The bundle content should be indented inside _init
-    expect(output).toContain('  -- Bundled by hyperstache')
+    expect(output).toContain('  -- Bundled by hyperengine')
     expect(output).toContain('  local _modules = {}')
 
     // Entry source should still be present (inside _init)

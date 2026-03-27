@@ -107,7 +107,7 @@ export async function resolveModules(
 
     const filePath = await tryResolve(moduleName)
     if (!filePath) {
-      if (moduleName !== 'templates' && moduleName !== 'hyperstache' && moduleName !== 'hyperstache-admin'
+      if (moduleName !== 'templates' && moduleName !== 'hyperengine' && moduleName !== 'hyperengine-admin'
         && moduleName !== 'lustache' && moduleName !== 'lustache.context'
         && moduleName !== 'lustache.renderer' && moduleName !== 'lustache.scanner') {
         // Only mark as unresolved if it's not an auto-generated module

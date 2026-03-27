@@ -1,1 +1,1 @@
-<h1>Hyperstache Admin</h1>
+<h1>Hyperengine Admin</h1>

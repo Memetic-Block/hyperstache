@@ -3,7 +3,7 @@ import { resolve, basename } from 'node:path'
 import type { ResolvedConfig } from './config.js'
 
 /**
- * Generate a .rockspec file from the hyperstache config.
+ * Generate a .rockspec file from the hyperengine config.
  */
 export function generateRockspec(
   config: ResolvedConfig,

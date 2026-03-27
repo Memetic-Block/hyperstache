@@ -17,7 +17,7 @@ const pkg = JSON.parse(
 const program = new Command()
 
 program
-  .name('hyperstache')
+  .name('hyperengine')
   .description('AO Lua process bundler with Mustache templates and optional Luarocks support')
   .version(pkg.version)
 
@@ -83,7 +83,7 @@ program
 
 program
   .command('create')
-  .description('Create a new hyperstache project')
+  .description('Create a new hyperengine project')
   .argument('[name]', 'Project name')
   .option('-T, --typescript', 'Include TypeScript support')
   .option('-e, --esm', 'Enable ESM mode for inlined scripts')

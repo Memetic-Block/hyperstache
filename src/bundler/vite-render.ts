@@ -160,9 +160,9 @@ interface InlinePluginOptions {
  * injected into each HTML `<head>` so the browser can resolve bare import
  * specifiers for external dependencies at runtime.
  */
-function hyperstacheInline(opts: InlinePluginOptions = {}): Plugin {
+function hyperengineInline(opts: InlinePluginOptions = {}): Plugin {
   return {
-    name: 'hyperstache-inline',
+    name: 'hyperengine-inline',
     enforce: 'post',
 
     generateBundle(_options, bundle: OutputBundle) {
@@ -298,7 +298,7 @@ export async function renderTemplates(
   //    can resolve relative asset imports (CSS, JS, TS, etc.)
   const tmpBase = resolve(
     tmpdir(),
-    `hyperstache-${randomBytes(6).toString('hex')}`,
+    `hyperengine-${randomBytes(6).toString('hex')}`,
   )
   await cp(config.templates.dir, tmpBase, { recursive: true })
 
@@ -359,8 +359,8 @@ export async function renderTemplates(
     // Split externals into Rollup externals + import map entries
     const { rollupExternals, importMap } = parseExternals(viteOpts.external)
 
-    // Merge: project vite.config → hyperstache template overrides → forced settings
-    const hyperstacheOverrides: InlineConfig = {
+    // Merge: project vite.config → hyperengine template overrides → forced settings
+    const hyperengineOverrides: InlineConfig = {
       plugins: viteOpts.plugins ?? [],
       css: viteOpts.css,
       resolve: viteOpts.resolve,
@@ -375,7 +375,7 @@ export async function renderTemplates(
     const forcedConfig: InlineConfig = {
       root: tmpBase,
       logLevel: 'warn',
-      plugins: [hyperstacheInline({ importMap, esm: viteOpts.esm })],
+      plugins: [hyperengineInline({ importMap, esm: viteOpts.esm })],
 
       build: {
         write: false,
@@ -390,7 +390,7 @@ export async function renderTemplates(
     }
 
     const merged = mergeConfig(
-      mergeConfig(projectConfig, hyperstacheOverrides),
+      mergeConfig(projectConfig, hyperengineOverrides),
       forcedConfig,
     )
 

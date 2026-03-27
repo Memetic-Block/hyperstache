@@ -21,7 +21,7 @@ describe('readManifest', () => {
   })
 
   it('reads existing manifest', async () => {
-    const dir = join(tmp, '.hyperstache')
+    const dir = join(tmp, '.hyperengine')
     await mkdir(dir, { recursive: true })
     const data = { processes: { main: { processId: 'abc123', deployedAt: '2025-01-01T00:00:00.000Z' } } }
     await writeFile(join(dir, 'deploy.json'), JSON.stringify(data))
@@ -34,7 +34,7 @@ describe('writeManifest', () => {
   it('creates directory and writes manifest', async () => {
     const data = { processes: { main: { processId: 'xyz789', deployedAt: '2025-01-01T00:00:00.000Z' } } }
     await writeManifest(tmp, data)
-    const raw = await readFile(join(tmp, '.hyperstache', 'deploy.json'), 'utf-8')
+    const raw = await readFile(join(tmp, '.hyperengine', 'deploy.json'), 'utf-8')
     const parsed = JSON.parse(raw)
     expect(parsed.processes.main.processId).toBe('xyz789')
   })

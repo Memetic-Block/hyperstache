@@ -6,7 +6,7 @@ export interface EmitOptions {
   modules: LuaModule[]
   /** Generated Lua source for the templates module, or null */
   templatesLuaSource: string | null
-  /** Generated Lua source for the hyperstache runtime module, or null */
+  /** Generated Lua source for the hyperengine runtime module, or null */
   runtimeLuaSource?: string | null
   /** Whether to auto-require the runtime module in the entry point */
   autoRequireRuntime?: boolean
@@ -29,7 +29,7 @@ export function emitBundle(
   const lines: string[] = []
 
   // Module loader preamble
-  lines.push('-- Bundled by hyperstache')
+  lines.push('-- Bundled by hyperengine')
   lines.push('local _modules = {}')
   lines.push('local _loaded = {}')
   lines.push('local _original_require = require')
@@ -69,7 +69,7 @@ export function emitBundle(
 
   // Runtime module (if any) — registered after templates so require('templates') resolves
   if (runtimeLuaSource) {
-    lines.push('_modules["hyperstache"] = function()')
+    lines.push('_modules["hyperengine"] = function()')
     for (const line of runtimeLuaSource.split('\n')) {
       lines.push(`  ${line}`)
     }
@@ -94,7 +94,7 @@ export function emitBundle(
   // Entry module runs directly (not wrapped)
   lines.push('-- Entry point')
   if (autoRequireRuntime && runtimeLuaSource) {
-    lines.push('require("hyperstache")')
+    lines.push('require("hyperengine")')
   }
   if (autoRequireModules) {
     for (const mod of autoRequireModules) {

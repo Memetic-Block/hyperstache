@@ -98,7 +98,7 @@ export interface ProcessConfig {
    *  preventing raw HTML from appearing in message headers. (default: "ui") */
   patchKey?: string
   /** Key under which template and ACL state is synced to `patch@1.0`.
-   *  State is nested as `{ templates: ..., acl: ... }` under this key. (default: "hyperstache_state") */
+   *  State is nested as `{ templates: ..., acl: ... }` under this key. (default: "hyperengine_state") */
   stateKey?: string
   /** Published module transaction ID (for WASM module builds). Set after `publish`. */
   moduleId?: string
@@ -124,7 +124,7 @@ export interface DeployConfig {
   actionTags?: DeployTag[]
 }
 
-export interface HyperstacheConfig {
+export interface HyperengineConfig {
   /** Named process definitions */
   processes: Record<string, ProcessConfig>
   /** Output directory (default: "dist") */
@@ -143,7 +143,7 @@ export interface HyperstacheConfig {
    *  preventing raw HTML from appearing in message headers. (default: "ui") */
   patchKey?: string
   /** Key under which template and ACL state is synced to `patch@1.0`.
-   *  State is nested as `{ templates: ..., acl: ... }` under this key. (default: "hyperstache_state") */
+   *  State is nested as `{ templates: ..., acl: ... }` under this key. (default: "hyperengine_state") */
   stateKey?: string
   /** Build as an aos module — clones the aos repo at the given commit and outputs the user's bundle as a require()'d module */
   aos?: AosConfig
@@ -183,7 +183,7 @@ export interface ResolvedProcessConfig {
   }
   /** Top-level key used when publishing to patch@1.0 (default: "ui") */
   patchKey: string
-  /** Key under which template and ACL state is synced to patch@1.0 (default: "hyperstache_state") */
+  /** Key under which template and ACL state is synced to patch@1.0 (default: "hyperengine_state") */
   stateKey: string
 }
 
@@ -236,9 +236,9 @@ export function resolveDeployConfig(raw?: DeployConfig): ResolvedDeployConfig {
 export const DEFAULT_EXTENSIONS = ['.html', '.htm', '.tmpl', '.mustache', '.mst', '.mu', '.stache']
 
 const CONFIG_FILES = [
-  'hyperstache.config.ts',
-  'hyperstache.config.js',
-  'hyperstache.config.mjs',
+  'hyperengine.config.ts',
+  'hyperengine.config.js',
+  'hyperengine.config.mjs',
 ]
 
 async function resolveTemplatesDir(root: string, entryDir: string, configDir?: string): Promise<string> {
@@ -290,7 +290,7 @@ function resolveAdminInterface(
 }
 
 export async function resolveConfig(
-  raw: HyperstacheConfig,
+  raw: HyperengineConfig,
   root: string,
 ): Promise<ResolvedConfig> {
   const entries = Object.entries(raw.processes)
@@ -363,7 +363,7 @@ export async function resolveConfig(
         adminInterface,
         handlers: adminInterface.enabled ? true : (proc.handlers ?? raw.handlers ?? false),
         patchKey: proc.patchKey ?? raw.patchKey ?? 'ui',
-        stateKey: proc.stateKey ?? raw.stateKey ?? 'hyperstache_state',
+        stateKey: proc.stateKey ?? raw.stateKey ?? 'hyperengine_state',
       }
     }),
   )
@@ -406,12 +406,12 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
     }
 
     const ext = extname(name)
-    let config: HyperstacheConfig
+    let config: HyperengineConfig
 
     if (ext === '.ts') {
       // Bundle the TS config to a temp ESM file with esbuild, then import it
       const { build } = await import('esbuild')
-      const outdir = resolve(root, 'node_modules', '.hyperstache')
+      const outdir = resolve(root, 'node_modules', '.hyperengine')
       const outfile = resolve(outdir, `config-${Date.now()}.mjs`)
       await mkdir(outdir, { recursive: true })
       await build({
@@ -423,13 +423,13 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
         write: true,
         packages: 'external',
         plugins: [{
-          name: 'hyperstache-config-shim',
+          name: 'hyperengine-config-shim',
           setup(b) {
-            b.onResolve({ filter: /^hyperstache$/ }, () => ({
-              path: 'hyperstache',
-              namespace: 'hyperstache-shim',
+            b.onResolve({ filter: /^@memetic-block\/hyperengine$/ }, () => ({
+              path: '@memetic-block/hyperengine',
+              namespace: 'hyperengine-shim',
             }))
-            b.onLoad({ filter: /.*/, namespace: 'hyperstache-shim' }, () => ({
+            b.onLoad({ filter: /.*/, namespace: 'hyperengine-shim' }, () => ({
               contents: 'export function defineConfig(config) { return config }',
               loader: 'js',
             }))
@@ -451,6 +451,6 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
   )
 }
 
-export function defineConfig(config: HyperstacheConfig): HyperstacheConfig {
+export function defineConfig(config: HyperengineConfig): HyperengineConfig {
   return config
 }

@@ -27,36 +27,36 @@ dist/
 lua_modules/
 *.rockspec
 .env
-.hyperstache/
+.hyperengine/
 `
 }
 
 function readme(name: string): string {
   return `# ${name}
 
-An [AO](https://ao.arweave.net) Lua process built with [hyperstache](https://github.com/memetic-block/hyperstache) and [Vite](https://vite.dev/).
+An [AO](https://ao.arweave.net) Lua process built with [hyperengine](https://github.com/memetic-block/hyperengine) and [Vite](https://vite.dev/).
 
 ## Getting Started
 
 \`\`\`bash
 npm install
-npx hyperstache build
+npx hyperengine build
 \`\`\`
 
 ## Development
 
 \`\`\`bash
-npx hyperstache dev
+npx hyperengine dev
 \`\`\`
 `
 }
 
 function processLua(flags: CreateFlags): string {
   const adminLine = flags.admin ? `require('admin')\n` : ''
-  return `local hyperstache = require('hyperstache')
+  return `local hyperengine = require('hyperengine')
 ${adminLine}
-hyperstache.publish({
-  home = hyperstache.renderTemplate('index.html', { title = 'Hello', name = Owner })
+hyperengine.publish({
+  home = hyperengine.renderTemplate('index.html', { title = 'Hello', name = Owner })
 })
 `
 }
@@ -102,7 +102,7 @@ function config(flags: CreateFlags): string {
   const runtimeBlock = flags.admin
     ? `\n  handlers: true,\n  adminInterface: true,`
     : ''
-  return `import { defineConfig } from 'hyperstache'
+  return `import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
   processes: {
@@ -190,13 +190,13 @@ function packageJson(name: string, flags: CreateFlags): string {
     private: true,
     type: 'module',
     scripts: {
-      build: 'hyperstache build',
-      dev: 'hyperstache dev',
-      deploy: 'hyperstache deploy',
-      publish: 'hyperstache publish',
+      build: 'hyperengine build',
+      dev: 'hyperengine dev',
+      deploy: 'hyperengine deploy',
+      publish: 'hyperengine publish',
     },
     devDependencies: {
-      hyperstache: 'latest',
+      '@memetic-block/hyperengine': 'latest',
       vite: '^6.0.0',
       ...(flags.typescript ? { typescript: '^5.6.0' } : {}),
     },
@@ -231,7 +231,7 @@ async function buildFiles(name: string, flags: CreateFlags): Promise<FileEntry[]
     { path: 'package.json', content: packageJson(name, flags) },
     { path: '.gitignore', content: gitignore() },
     { path: 'README.md', content: readme(name) },
-    { path: 'hyperstache.config.ts', content: config(flags) },
+    { path: 'hyperengine.config.ts', content: config(flags) },
     { path: 'src/process.lua', content: processLua(flags) },
     { path: 'src/lib/utils.lua', content: utilsLua() },
     { path: 'src/templates/index.html', content: indexHtml(flags) },
@@ -325,6 +325,6 @@ export function printNextSteps(name: string, projectDir?: string): void {
   console.log()
   console.log(`    cd ${cdTarget}`)
   console.log('    npm install')
-  console.log('    npx hyperstache build')
+    console.log('    npx hyperengine build')
   console.log()
 }
