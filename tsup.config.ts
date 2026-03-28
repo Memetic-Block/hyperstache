@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup'
-import { copyFileSync, cpSync, mkdirSync } from 'node:fs'
+import { cpSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export default defineConfig({
@@ -24,10 +24,8 @@ export default defineConfig({
     'dotenv',
   ],
   onSuccess: async () => {
-    // Copy Lua runtime files to dist/lua/ so they resolve via import.meta.url
-    const luaDir = resolve('dist', 'lua')
-    mkdirSync(luaDir, { recursive: true })
-    copyFileSync(resolve('src', 'lua', 'runtime.lua'), resolve(luaDir, 'runtime.lua'))
+    // Copy all Lua runtime files (runtime.lua + lustache) to dist/lua/
+    cpSync(resolve('src', 'lua'), resolve('dist', 'lua'), { recursive: true })
 
     // Copy admin scaffold files to dist/scaffolds/admin/
     cpSync(resolve('src', 'scaffolds', 'admin'), resolve('dist', 'scaffolds', 'admin'), { recursive: true })

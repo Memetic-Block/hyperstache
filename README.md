@@ -1166,6 +1166,11 @@ hyperengine publish --process reader
 hyperengine deploy
 hyperengine deploy --process main
 
+# Smoke-test compiled WASM modules with aoloader
+hyperengine smoke
+hyperengine smoke main
+hyperengine smoke --all
+
 # Verbose output (config, file ops, network status, timing)
 hyperengine deploy --verbose
 hyperengine publish --verbose
@@ -1181,11 +1186,13 @@ hyperengine deploy --debug
 | `rockspec` | Generate a `.rockspec` file from luarocks config                 |
 | `publish`  | Upload WASM or Lua modules to Arweave via Turbo                  |
 | `deploy`   | Spawn AO processes and load bundled Lua code                     |
+| `smoke`    | Smoke-test compiled ao WASM modules locally via aoloader         |
 
 Options for all commands:
 
 - `-r, --root <dir>` — Project root directory (default: `.`)
 - `-p, --process <name>` — Target a specific process (build/publish/deploy)
+- `--all` — Smoke-test all ao module processes (smoke)
 
 Options for `deploy` and `publish`:
 

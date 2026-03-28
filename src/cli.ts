@@ -212,6 +212,10 @@ program
     const updates: Record<string, { processId: string; moduleId: string }> = {}
     for (const proc of targets) {
       try {
+        console.log(`[${proc.name}] Deploying process...`)
+        console.log(`[${proc.name}] HyperBEAM URL: ${config.deploy.hyperbeamUrl}`)
+        console.log(`[${proc.name}] Scheduler: ${config.deploy.scheduler}`)
+        console.log(`[${proc.name}] Authority: ${config.deploy.authority}`)
         const result = await deployProcess(proc, config.deploy, wallet, root, logger)
         console.log(`[${result.processName}] Module: ${result.moduleId}`)
         console.log(`[${result.processName}] Spawned process: ${result.processId}`)
@@ -233,6 +237,64 @@ program
 
     // NB: Known issue with @permaweb/aoconnect where it doesn't properly clear setInterval(), so we force exit
     process.exit(0)
+  })
+
+program
+  .command('smoke')
+  .description('Smoke-test ao WASM modules by loading them with aoloader')
+  .argument('[name]', 'Smoke-test only the named process')
+  .option('-r, --root <dir>', 'Project root directory', '.')
+  .option('--all', 'Smoke-test all ao module processes (default when no name given)')
+  .action(async (name: string | undefined, opts: { root: string; all?: boolean }) => {
+    const root = resolve(opts.root)
+    const config = await loadConfig(root)
+    const { smokeProcess, smoke } = await import('./smoke.js')
+
+    if (!config.aos.enabled) {
+      console.error('aos is not enabled in config. Smoke testing requires aos WASM builds.')
+      process.exit(1)
+    }
+
+    if (name) {
+      const proc = config.processes.find(p => p.name === name)
+      if (!proc) {
+        const names = config.processes.map(p => p.name).join(', ')
+        console.error(`Unknown process "${name}". Available: ${names}`)
+        process.exit(1)
+      }
+      if (proc.type === 'module') {
+        console.error(
+          `Process "${name}" is a dynamic read module (type: 'module'). ` +
+          `Smoke testing is only available for ao module processes.`,
+        )
+        process.exit(1)
+      }
+      const result = await smokeProcess(proc, config.aos)
+      if (result.success) {
+        const gas = result.gasUsed != null ? ` (gas: ${result.gasUsed})` : ''
+        console.log(`[${result.processName}] Smoke OK${gas}`)
+      } else {
+        console.error(`[${result.processName}] FAIL: ${result.error}`)
+        process.exit(1)
+      }
+    } else {
+      const results = await smoke(config)
+      if (results.length === 0) {
+        console.error('No ao module processes found to smoke-test.')
+        process.exit(1)
+      }
+      let failed = false
+      for (const result of results) {
+        if (result.success) {
+          const gas = result.gasUsed != null ? ` (gas: ${result.gasUsed})` : ''
+          console.log(`[${result.processName}] Smoke OK${gas}`)
+        } else {
+          console.error(`[${result.processName}] FAIL: ${result.error}`)
+          failed = true
+        }
+      }
+      if (failed) process.exit(1)
+    }
   })
 
 program.parse()

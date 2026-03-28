@@ -39,6 +39,7 @@
   "author": "Jim Toth",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@permaweb/ao-loader": "^0.0.49",
     "@permaweb/aoconnect": "^0.0.93",
     "commander": "^12.1.0",
     "dotenv": "^17.3.1",

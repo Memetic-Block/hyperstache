@@ -3,10 +3,16 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-// Mock @ardrive/turbo-sdk to simulate missing package
-vi.mock('@ardrive/turbo-sdk', () => {
-  throw new Error("Cannot find module '@ardrive/turbo-sdk'")
-})
+// Mock the turbo module to simulate missing package
+vi.mock('../src/deploy/turbo.js', () => ({
+  loadTurboSDK: vi.fn(async () => {
+    throw new Error(
+      '@ardrive/turbo-sdk is required for publishing but is not installed.\n\n' +
+      '  npm install @ardrive/turbo-sdk\n\n' +
+      'Then run the publish command again.',
+    )
+  }),
+}))
 
 import { publishProcess } from '../src/deploy/publish.js'
 import type { ResolvedProcessConfig, ResolvedDeployConfig } from '../src/config.js'

@@ -3,16 +3,18 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-// Mock @ardrive/turbo-sdk
-vi.mock('@ardrive/turbo-sdk', () => ({
-  TurboFactory: {
-    authenticated: vi.fn(() => ({
-      uploadFile: vi.fn(async ({ dataItemOpts }: { dataItemOpts: { tags: Array<{ name: string; value: string }> } }) => {
-        const contentType = dataItemOpts.tags.find((t: { name: string }) => t.name === 'Content-Type')?.value
-        return { id: `tx-${contentType === 'application/wasm' ? 'wasm' : 'lua'}-12345` }
-      }),
-    })),
-  },
+// Mock the turbo module so @ardrive/turbo-sdk is never actually imported
+vi.mock('../src/deploy/turbo.js', () => ({
+  loadTurboSDK: vi.fn(async () => ({
+    TurboFactory: {
+      authenticated: vi.fn(() => ({
+        uploadFile: vi.fn(async ({ dataItemOpts }: { dataItemOpts: { tags: Array<{ name: string; value: string }> } }) => {
+          const contentType = dataItemOpts.tags.find((t: { name: string }) => t.name === 'Content-Type')?.value
+          return { id: `tx-${contentType === 'application/wasm' ? 'wasm' : 'lua'}-12345` }
+        }),
+      })),
+    },
+  })),
 }))
 
 import { publishProcess } from '../src/deploy/publish.js'

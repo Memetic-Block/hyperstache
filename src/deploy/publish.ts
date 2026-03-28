@@ -4,6 +4,7 @@ import type { JWK } from './wallet.js'
 import type { ResolvedProcessConfig, ResolvedDeployConfig } from '../config.js'
 import { defaultLogger } from './logger.js'
 import type { Logger } from './logger.js'
+import { loadTurboSDK } from './turbo.js'
 
 export interface PublishResult {
   processName: string
@@ -29,16 +30,7 @@ export async function publishProcess(
   const totalDone = logger.time('Publish total')
   logger.verbose(`Publishing process "${proc.name}"`)
 
-  let TurboFactory: typeof import('@ardrive/turbo-sdk').TurboFactory
-  try {
-    ;({ TurboFactory } = await import('@ardrive/turbo-sdk'))
-  } catch {
-    throw new Error(
-      '@ardrive/turbo-sdk is required for publishing but is not installed.\n\n' +
-      '  npm install @ardrive/turbo-sdk\n\n' +
-      'Then run the publish command again.',
-    )
-  }
+  const { TurboFactory } = await loadTurboSDK()
   const turbo = TurboFactory.authenticated({ privateKey: wallet })
 
   // Check for WASM build artifact first
