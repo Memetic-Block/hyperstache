@@ -10,6 +10,7 @@ export interface CreateFlags {
   typescript?: boolean
   esm?: boolean
   admin?: boolean
+  module?: boolean
 }
 
 interface FileEntry {
@@ -53,6 +54,22 @@ npx hyperengine dev
 
 function processLua(flags: CreateFlags): string {
   const adminLine = flags.admin ? `require('admin')\n` : ''
+  if (flags.module) {
+    return `local hyperengine = require('hyperengine')
+${adminLine}
+hyperengine.publish({
+  home = hyperengine.renderTemplate('index.html', { title = 'Hello', name = Owner })
+})
+
+Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(msg)
+  Send({
+    Target = msg.From,
+    Action = 'Info-Response',
+    Data = 'Hello from ' .. Name
+  })
+end)
+`
+  }
   return `local hyperengine = require('hyperengine')
 ${adminLine}
 hyperengine.publish({
@@ -102,6 +119,9 @@ function config(flags: CreateFlags): string {
   const runtimeBlock = flags.admin
     ? `\n  handlers: true,\n  adminInterface: true,`
     : ''
+  const aosBlock = flags.module
+    ? `\n  aos: {\n    commit: 'd5ff8f44df752b13a1e7bce3ded2a5d84b69287f',\n  },`
+    : ''
   return `import { defineConfig } from '@memetic-block/hyperengine'
 
 export default defineConfig({
@@ -110,7 +130,7 @@ export default defineConfig({
   },
   templates: {
     vite: ${viteBlock},
-  },${runtimeBlock}
+  },${runtimeBlock}${aosBlock}
   // deploy: {
   //   wallet: './wallet.json',
   //   // hyperbeamUrl: 'https://your-hyperbeam-node.example',
@@ -302,7 +322,7 @@ export async function createProject(
   return projectDir
 }
 
-export function printNextSteps(name: string, projectDir?: string): void {
+export function printNextSteps(name: string, projectDir?: string, flags: CreateFlags = {}): void {
   const cwd = process.cwd()
   let cdTarget: string
   if (projectDir) {
@@ -319,6 +339,9 @@ export function printNextSteps(name: string, projectDir?: string): void {
   console.log()
   console.log(`    cd ${cdTarget}`)
   console.log('    npm install')
-    console.log('    npx hyperengine build')
+  console.log('    npx hyperengine build')
+  if (flags.module) {
+    console.log('    cd dist/main && ao build')
+  }
   console.log()
 }

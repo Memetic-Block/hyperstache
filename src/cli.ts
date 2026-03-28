@@ -88,8 +88,9 @@ program
   .option('-T, --typescript', 'Include TypeScript support')
   .option('-e, --esm', 'Enable ESM mode for inlined scripts')
   .option('-a, --admin', 'Include admin interface for template & ACL management')
+  .option('-m, --module', 'Scaffold as an AO module (for aos WASM builds)')
   .option('-d, --directory <dir>', 'Parent directory for the new project')
-  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean; admin?: boolean; directory?: string }) => {
+  .action(async (name: string | undefined, opts: { typescript?: boolean; esm?: boolean; admin?: boolean; module?: boolean; directory?: string }) => {
     if (!name) {
       const { createInterface } = await import('node:readline/promises')
       const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -105,11 +106,12 @@ program
       typescript: opts.typescript,
       esm: opts.esm,
       admin: opts.admin,
+      module: opts.module,
     }
     const parentDir = opts.directory ? resolve(opts.directory) : process.cwd()
     try {
       const projectDir = await createProject(name, flags, parentDir)
-      printNextSteps(name, projectDir)
+      printNextSteps(name, projectDir, flags)
     } catch (err: unknown) {
       console.error((err as Error).message)
       process.exit(1)

@@ -97,6 +97,9 @@ npx hyperengine create my-app --typescript --esm
 # With admin interface for template & ACL management
 npx hyperengine create my-app --admin
 
+# As an AO module (for aos WASM builds)
+npx hyperengine create my-app --module
+
 # Specify a target directory
 npx hyperengine create my-app --directory ~/projects
 ```
@@ -106,6 +109,7 @@ npx hyperengine create my-app --directory ~/projects
 | `--typescript` | Adds TypeScript: tsconfig.json, app.ts entry, `type="module"` on script tags, TS devDep |
 | `--esm`        | Enables ESM mode in the Vite config (`vite: { esm: true }`)  |
 | `--admin`      | Scaffolds admin UI files into `src/admin/` and enables admin interface in config  |
+| `--module`     | Configures `aos` for WASM module builds, scaffolds process with `Handlers.add` |
 | `--directory`  | Parent directory for the new project (default: current dir)   |
 
 All scaffolded projects include Vite template processing and CSS out of the box.

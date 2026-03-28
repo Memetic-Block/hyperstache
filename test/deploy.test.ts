@@ -44,7 +44,10 @@ function makeProc(overrides: Partial<ResolvedProcessConfig> = {}): ResolvedProce
     root: tmp,
     templates: { extensions: ['.html'], dir: join(tmp, 'src/templates'), vite: false },
     luarocks: { dependencies: {}, luaVersion: '5.3' },
-    runtime: { enabled: false, handlers: false, adminInterface: { enabled: false, path: 'admin' } },
+    handlers: false,
+    adminInterface: { enabled: false, path: 'admin', dir: join(tmp, 'src/admin') },
+    patchKey: 'ui',
+    stateKey: 'hyperengine_state',
     ...overrides,
   }
 }

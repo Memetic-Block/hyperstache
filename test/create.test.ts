@@ -228,6 +228,70 @@ describe('createProject', () => {
     })
   })
 
+  describe('--module', () => {
+    it('creates expected files (same as default)', async () => {
+      await createProject('my-app', { module: true }, tmp)
+      const files = await listFiles(join(tmp, 'my-app'))
+      expect(files).toEqual(BASE_FILES)
+    })
+
+    it('config includes aos block with commit hash', async () => {
+      await createProject('my-app', { module: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
+      expect(config).toContain('aos: {')
+      expect(config).toContain("commit: 'd5ff8f44df752b13a1e7bce3ded2a5d84b69287f'")
+    })
+
+    it('process.lua includes Handlers.add', async () => {
+      await createProject('my-app', { module: true }, tmp)
+      const lua = await readFile(join(tmp, 'my-app/src/process.lua'), 'utf-8')
+      expect(lua).toContain('Handlers.add')
+    })
+
+    it('config does not include aos block without module flag', async () => {
+      await createProject('my-app', {}, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
+      expect(config).not.toContain('aos')
+    })
+  })
+
+  describe('--module --admin', () => {
+    it('config includes both aos and admin blocks', async () => {
+      await createProject('my-app', { module: true, admin: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
+      expect(config).toContain('aos: {')
+      expect(config).toContain('adminInterface: true')
+      expect(config).toContain('handlers: true')
+    })
+
+    it('process.lua includes both Handlers.add and admin require', async () => {
+      await createProject('my-app', { module: true, admin: true }, tmp)
+      const lua = await readFile(join(tmp, 'my-app/src/process.lua'), 'utf-8')
+      expect(lua).toContain('Handlers.add')
+      expect(lua).toContain("require('admin')")
+    })
+  })
+
+  describe('--module --typescript', () => {
+    it('creates typescript files and config has aos', async () => {
+      await createProject('my-app', { module: true, typescript: true }, tmp)
+      const files = await listFiles(join(tmp, 'my-app'))
+      expect(files).toContain('tsconfig.json')
+      expect(files).toContain('src/templates/app.ts')
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
+      expect(config).toContain('aos: {')
+    })
+  })
+
+  describe('--module --esm', () => {
+    it('config has both esm and aos', async () => {
+      await createProject('my-app', { module: true, esm: true }, tmp)
+      const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
+      expect(config).toContain('esm: true')
+      expect(config).toContain('aos: {')
+    })
+  })
+
   describe('validation', () => {
     it('rejects invalid project names', async () => {
       await expect(createProject('My App!', {}, tmp)).rejects.toThrow('Invalid project name')
@@ -254,6 +318,7 @@ describe('createProject', () => {
       { label: '--esm', flags: { esm: true } },
       { label: '--typescript --esm', flags: { typescript: true, esm: true } },
       { label: '--admin', flags: { admin: true } },
+      { label: '--module', flags: { module: true } },
     ]
 
     for (const { label, flags } of flagCombos) {
@@ -296,6 +361,30 @@ describe('createProject', () => {
       expect(logs.some(l => l.includes('npm run luarocks-install'))).toBe(false)
       expect(logs.some(l => l.includes('npx hyperengine build'))).toBe(true)
       expect(logs.some(l => l.includes('npx hyperengine dev'))).toBe(false)
+    })
+
+    it('includes ao build step when module flag is set', () => {
+      const logs: string[] = []
+      const orig = console.log
+      console.log = (...args: unknown[]) => logs.push(args.join(' '))
+      try {
+        printNextSteps('my-app', undefined, { module: true })
+      } finally {
+        console.log = orig
+      }
+      expect(logs.some(l => l.includes('ao build'))).toBe(true)
+    })
+
+    it('does not include ao build step without module flag', () => {
+      const logs: string[] = []
+      const orig = console.log
+      console.log = (...args: unknown[]) => logs.push(args.join(' '))
+      try {
+        printNextSteps('my-app')
+      } finally {
+        console.log = orig
+      }
+      expect(logs.some(l => l.includes('ao build'))).toBe(false)
     })
 
     it('uses relative path when projectDir is under cwd', () => {
