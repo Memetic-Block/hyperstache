@@ -244,9 +244,9 @@ describe('writeAosYaml', () => {
   it('creates output directory if it does not exist', async () => {
     const nested = join(dir, 'sub', 'dir')
     const yamlPath = await writeAosYaml(nested, {
-      stackSize: 3_145_728,
-      initialMemory: 4_194_304,
-      maximumMemory: 1_073_741_824,
+      stack_size: 3_145_728,
+      initial_memory: 4_194_304,
+      maximum_memory: 1_073_741_824,
       target: 32,
       aos_git_hash: 'cafebabe',
       compute_limit: '9000000000000',

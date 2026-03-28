@@ -77,28 +77,43 @@ export async function smokeProcess(
     }
   }
 
+  const smokeTestProcessId = 'SMOKE_TEST_PROCESS'.padEnd(43, '0')
+  const smokeTestOwnerId = 'SMOKE_TEST_OWNER'.padEnd(43, '0')
+  const smokeTestAuthorityId = 'SMOKE_TEST_AUTHORITY'.padEnd(43, '0')
+  const smokeTestModuleId = 'SMOKE_TEST_MODULE'.padEnd(43, '0')
+
   const env = {
     Process: {
-      Id: 'SMOKE_TEST_PROCESS',
-      Owner: 'SMOKE_TEST_OWNER',
+      Id: smokeTestProcessId,
+      Owner: smokeTestOwnerId,
       Tags: [
         { name: 'Name', value: proc.name },
-        { name: 'Authority', value: 'SMOKE_TEST_AUTHORITY' },
+        { name: 'Authority', value: smokeTestAuthorityId },
       ],
     },
+    Module: {
+      Id: smokeTestModuleId,
+      Tags: [{ name: 'Authority', value: smokeTestAuthorityId }],
+    }
   }
 
   // Spawn: pass null as memory buffer to initialise a fresh process
   let result: { Output?: unknown; Messages?: unknown[]; Error?: string; GasUsed?: number; Memory?: unknown }
   try {
     result = await handle(null, {
-      Owner: 'SMOKE_TEST_OWNER',
-      Target: 'SMOKE_TEST_PROCESS',
-      From: 'SMOKE_TEST_OWNER',
+      Id: 'smoke-test-message-id'.padEnd(43, '0'),
+      ['Block-Height']: '1',
+      Owner: smokeTestOwnerId,
+      Module: smokeTestModuleId,
+      Target: smokeTestProcessId,
+      From: smokeTestOwnerId,
+      Timestamp: Date.now(),
+      Reference: '1',
       Tags: [{ name: 'Action', value: 'Eval' }],
-      Data: 'return "smoke"',
+      Data: 'print("smoke test success")',
     }, env)
   } catch (err: unknown) {
+    console.error(`Error during WASM execution for process ${proc.name}:`, err)
     return {
       processName: proc.name,
       success: false,
