@@ -923,9 +923,9 @@ export default defineConfig({
     stack_size: 3_145_728,        // 3MiB (default)
     initial_memory: 4_194_304,    // 4MiB — includes stack + heap (default)
     maximum_memory: 1_073_741_824, // 1GiB (default)
-    target: 32,                    // wasm32 (default) or 64 for wasm64
+    target: 64,                    // wasm64 (default) or 32 for wasm32
     compute_limit: '9000000000000', // publishing compute limit (default)
-    module_format: 'wasm32-unknown-emscripten-metering', // auto-derived from target
+    module_format: 'wasm64-unknown-emscripten-draft_2024_02_15', // auto-derived from target
   },
 })
 ```
@@ -937,11 +937,11 @@ The generated `config.yml`:
 stack_size: 3145728
 initial_memory: 4194304
 maximum_memory: 1073741824
-target: 32
+target: 64
 # extra info
 aos_git_hash: 'ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9'
 compute_limit: '9000000000000'
-module_format: 'wasm32-unknown-emscripten-metering'
+module_format: 'wasm64-unknown-emscripten-draft_2024_02_15'
 ```
 
 ### Caching
@@ -1062,13 +1062,7 @@ export default defineConfig({
 
 ### Publishing Modules
 
-The `publish` command uploads build artifacts to Arweave via [Turbo](https://ardrive.io/turbo/). It requires `@ardrive/turbo-sdk` to be installed in your project:
-
-```bash
-npm install @ardrive/turbo-sdk
-```
-
-If the package is not installed, the `publish` command will prompt you to install it.
+The `publish` command uploads build artifacts to Arweave via [Turbo](https://ardrive.io/turbo/). It uses `@ardrive/turbo-sdk`, which is included as an optional dependency and installed automatically with `npm install`. If the package is not installed, the `publish` command will prompt you to install it.
 
 - **WASM modules**: Looks for `dist/<name>/process.wasm` (output of `ao build`), uploads with `Content-Type: application/wasm` and `Type: Module` tags
 - **Lua modules**: Uploads the bundled `.lua` file from `dist/` with `Content-Type: text/x-lua` and `Type: Module` tags
@@ -1262,9 +1256,9 @@ export default defineConfig({
     stack_size: 3_145_728,     // Stack size in bytes (default: 3MiB)
     initial_memory: 4_194_304, // Initial memory in bytes (default: 4MiB)
     maximum_memory: 1_073_741_824, // Max memory in bytes (default: 1GiB)
-    target: 32,                // wasm32 (default) or 64 for wasm64
+    target: 64,                // wasm64 (default) or 32 for wasm32
     compute_limit: '9000000000000', // Compute limit for publishing
-    module_format: 'wasm32-unknown-emscripten-metering', // Auto-derived from target
+    module_format: 'wasm64-unknown-emscripten-draft_2024_02_15', // Auto-derived from target
     exclude: ['.crypto.init'], // Strip require() calls for unused default modules
   },
 
@@ -1349,11 +1343,11 @@ interface HyperengineConfig {
     initial_memory?: number
     /** Maximum memory in bytes (default: 1073741824 = 1GiB) */
     maximum_memory?: number
-    /** WASM target: 32 or 64 (default: 32) */
+    /** WASM target: 32 or 64 (default: 64) */
     target?: 32 | 64
     /** Compute limit for publishing (default: '9000000000000') */
     compute_limit?: string
-    /** Module format (default: derived from target, e.g. 'wasm32-unknown-emscripten-metering') */
+    /** Module format (default: derived from target, e.g. 'wasm64-unknown-emscripten-draft_2024_02_15') */
     module_format?: string
     /** Dot-path module names to exclude from the aos process.lua (e.g. ['.crypto.init']) */
     exclude?: string[]

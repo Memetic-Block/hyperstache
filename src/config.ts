@@ -67,11 +67,11 @@ export interface AosConfig {
   initial_memory?: number
   /** Maximum memory in bytes (default: 1073741824 = 1GiB) */
   maximum_memory?: number
-  /** WASM target: 32 or 64 (default: 32) */
+  /** WASM target: 32 or 64 (default: 64) */
   target?: 32 | 64
   /** Compute limit for publishing (default: '9000000000000') */
   compute_limit?: string
-  /** Module format (default: derived from target, e.g. 'wasm32-unknown-emscripten-metering') */
+  /** Module format (default: derived from target, e.g. 'wasm64-unknown-emscripten-draft_2024_02_15') */
   module_format?: string
   /** Dot-path module names to exclude from the aos process.lua (e.g. ['.crypto.init']) */
   exclude?: string[]
@@ -299,7 +299,7 @@ export async function resolveConfig(
   }
 
   // Validate aos config
-  const aosTarget = raw.aos?.target ?? 32
+  const aosTarget = raw.aos?.target ?? 64
   const aos: ResolvedConfig['aos'] = raw.aos
     ? {
         enabled: true,
@@ -309,7 +309,7 @@ export async function resolveConfig(
         maximum_memory: raw.aos.maximum_memory ?? 1_073_741_824,
         target: aosTarget,
         compute_limit: raw.aos.compute_limit ?? '9000000000000',
-        module_format: raw.aos.module_format ?? `wasm${aosTarget}-unknown-emscripten-metering`,
+        module_format: raw.aos.module_format ?? `wasm${aosTarget}-unknown-emscripten-draft_2024_02_15`,
         exclude: raw.aos.exclude ?? [],
       }
     : {
@@ -318,9 +318,9 @@ export async function resolveConfig(
         stack_size: 3_145_728,
         initial_memory: 4_194_304,
         maximum_memory: 1_073_741_824,
-        target: 32 as const,
+        target: 64 as const,
         compute_limit: '9000000000000',
-        module_format: 'wasm32-unknown-emscripten-metering',
+        module_format: 'wasm64-unknown-emscripten-draft_2024_02_15',
         exclude: [],
       }
 

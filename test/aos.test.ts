@@ -247,10 +247,10 @@ describe('generateAosYaml', () => {
     stack_size: 3_145_728,
     initial_memory: 4_194_304,
     maximum_memory: 1_073_741_824,
-    target: 32 as const,
+    target: 64 as const,
     aos_git_hash: '15dd81ee596518e2f44521e973b8ad1ce3ee9945',
     compute_limit: '9000000000000',
-    module_format: 'wasm32-unknown-emscripten-metering',
+    module_format: 'wasm64-unknown-emscripten-draft_2024_02_15',
   }
 
   it('generates valid YAML with all default fields', () => {
@@ -258,10 +258,10 @@ describe('generateAosYaml', () => {
     expect(yaml).toContain('stack_size: 3145728')
     expect(yaml).toContain('initial_memory: 4194304')
     expect(yaml).toContain('maximum_memory: 1073741824')
-    expect(yaml).toContain('target: 32')
+    expect(yaml).toContain('target: 64')
     expect(yaml).toContain("aos_git_hash: '15dd81ee596518e2f44521e973b8ad1ce3ee9945'")
     expect(yaml).toContain("compute_limit: '9000000000000'")
-    expect(yaml).toContain("module_format: 'wasm32-unknown-emscripten-metering'")
+    expect(yaml).toContain("module_format: 'wasm64-unknown-emscripten-draft_2024_02_15'")
   })
 
   it('respects custom values', () => {
@@ -306,10 +306,10 @@ describe('writeAosYaml', () => {
       stack_size: 3_145_728,
       initial_memory: 4_194_304,
       maximum_memory: 1_073_741_824,
-      target: 32,
+      target: 64,
       aos_git_hash: 'deadbeef',
       compute_limit: '9000000000000',
-      module_format: 'wasm32-unknown-emscripten-metering',
+      module_format: 'wasm64-unknown-emscripten-draft_2024_02_15',
     })
 
     expect(yamlPath).toBe(join(dir, 'config.yml'))
@@ -324,10 +324,10 @@ describe('writeAosYaml', () => {
       stack_size: 3_145_728,
       initial_memory: 4_194_304,
       maximum_memory: 1_073_741_824,
-      target: 32,
+      target: 64,
       aos_git_hash: 'cafebabe',
       compute_limit: '9000000000000',
-      module_format: 'wasm32-unknown-emscripten-metering',
+      module_format: 'wasm64-unknown-emscripten-draft_2024_02_15',
     })
 
     const content = await readFile(yamlPath, 'utf-8')

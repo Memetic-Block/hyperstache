@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import type { JWK } from './wallet.js'
 
 export interface TurboClient {
@@ -15,14 +16,15 @@ export interface TurboSDK {
 }
 
 /**
- * Dynamically import `@ardrive/turbo-sdk`.  Extracted into its own module
- * so tests can mock this single function without affecting publishProcess.
+ * Load `@ardrive/turbo-sdk` via CJS require.  The SDK's transitive dep
+ * `ethers` re-exports a named binding from the CJS-only `ws` package,
+ * which fails under Node ESM (`import()`).  Using `createRequire` avoids
+ * that incompatibility.
  */
 export async function loadTurboSDK(): Promise<TurboSDK> {
   try {
-    // Variable indirection prevents TypeScript from resolving the specifier during DTS emit
-    const id = '@ardrive/turbo-sdk'
-    return await (import(id) as Promise<unknown>) as TurboSDK
+    const require = createRequire(import.meta.url)
+    return require('@ardrive/turbo-sdk') as TurboSDK
   } catch (err) {
     console.error(err)
     throw new Error(

@@ -50,9 +50,9 @@ const aosEnabled: ResolvedConfig['aos'] = {
   stack_size: 3_145_728,
   initial_memory: 4_194_304,
   maximum_memory: 1_073_741_824,
-  target: 32,
+  target: 64,
   compute_limit: '9000000000000',
-  module_format: 'wasm32-unknown-emscripten-metering',
+  module_format: 'wasm64-unknown-emscripten-draft_2024_02_15',
   exclude: [],
 }
 
@@ -82,7 +82,7 @@ describe('smokeProcess', () => {
     expect(mockAoLoader).toHaveBeenCalledWith(
       expect.any(Buffer),
       expect.objectContaining({
-        format: 'wasm32-unknown-emscripten-metering',
+        format: 'wasm64-unknown-emscripten-draft_2024_02_15',
         memoryLimit: '1073741824',
         computeLimit: '9000000000000',
       }),

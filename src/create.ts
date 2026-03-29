@@ -223,6 +223,13 @@ function packageJson(name: string, flags: CreateFlags): string {
     dependencies: {
       '@permaweb/aoconnect': '^0.0.93',
     },
+    optionalDependencies: {
+      '@ardrive/turbo-sdk': '^1.41.0',
+    },
+    overrides: {
+      '@permaweb/aoconnect': '$@permaweb/aoconnect',
+      'elliptic': '^6.6.1'
+    },
   }
   return JSON.stringify(pkg, null, 2) + '\n'
 }

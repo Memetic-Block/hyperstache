@@ -166,6 +166,8 @@ program
 
     await mergeManifest(root, updates)
     console.log('Deploy manifest updated.')
+    // NB: Known issue with @permaweb/aoconnect where it doesn't properly clear setInterval(), so we force exit
+    process.exit(0)
   })
 
 program
