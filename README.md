@@ -1064,7 +1064,7 @@ export default defineConfig({
 
 The `publish` command uploads build artifacts to Arweave via [Turbo](https://ardrive.io/turbo/). It uses `@ardrive/turbo-sdk`, which is included as an optional dependency and installed automatically with `npm install`. If the package is not installed, the `publish` command will prompt you to install it.
 
-- **WASM modules**: Looks for `dist/<name>/process.wasm` (output of `ao build`), uploads with `Content-Type: application/wasm` and `Type: Module` tags
+- **WASM modules**: Looks for `dist/<name>/process.wasm` (output of `ao build`), uploads with full AO module tags including `Content-Type: application/wasm`, `Data-Protocol: ao`, `Type: Module`, `Variant: ao.TN.1`, `Input-Encoding: JSON-1`, `Output-Encoding: JSON-1`. When `aos` config is present, also includes `Module-Format`, `Memory-Limit`, and `Compute-Limit` derived from your config.
 - **Lua modules**: Uploads the bundled `.lua` file from `dist/` with `Content-Type: text/x-lua` and `Type: Module` tags
 
 ```bash

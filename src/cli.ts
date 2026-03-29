@@ -155,7 +155,7 @@ program
     const updates: Record<string, { moduleId: string }> = {}
     for (const proc of targets) {
       try {
-        const result = await publishProcess(proc, config.deploy, wallet, logger)
+        const result = await publishProcess(proc, config.deploy, wallet, logger, config.aos)
         console.log(`[${result.processName}] Published ${result.type} module: ${result.transactionId}`)
         updates[result.processName] = { moduleId: result.transactionId }
       } catch (err: unknown) {

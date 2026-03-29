@@ -1,7 +1,7 @@
 import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { JWK } from './wallet.js'
-import type { ResolvedProcessConfig, ResolvedDeployConfig } from '../config.js'
+import type { ResolvedProcessConfig, ResolvedDeployConfig, ResolvedConfig } from '../config.js'
 import { defaultLogger } from './logger.js'
 import type { Logger } from './logger.js'
 import { loadTurboSDK } from './turbo.js'
@@ -21,11 +21,23 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+/** Format bytes as a human-readable Memory-Limit tag value (e.g. "1-gb"). */
+export function formatMemoryLimit(bytes: number): string {
+  const gb = bytes / (1024 * 1024 * 1024)
+  if (gb >= 1 && Number.isInteger(gb)) return `${gb}-gb`
+  const mb = bytes / (1024 * 1024)
+  if (mb >= 1 && Number.isInteger(mb)) return `${mb}-mb`
+  const kb = bytes / 1024
+  if (kb >= 1 && Number.isInteger(kb)) return `${kb}-kb`
+  return `${bytes}-bytes`
+}
+
 export async function publishProcess(
   proc: ResolvedProcessConfig,
   deployConfig: ResolvedDeployConfig,
   wallet: JWK,
   logger: Logger = defaultLogger,
+  aos?: ResolvedConfig['aos'],
 ): Promise<PublishResult> {
   const totalDone = logger.time('Publish total')
   logger.verbose(`Publishing process "${proc.name}"`)
@@ -41,7 +53,16 @@ export async function publishProcess(
     logger.verbose(`Found WASM artifact (${data.byteLength} bytes)`)
     const tags = [
       { name: 'Content-Type', value: 'application/wasm' },
+      { name: 'Data-Protocol', value: 'ao' },
       { name: 'Type', value: 'Module' },
+      { name: 'Variant', value: 'ao.TN.1' },
+      { name: 'Input-Encoding', value: 'JSON-1' },
+      { name: 'Output-Encoding', value: 'JSON-1' },
+      ...(aos ? [
+        { name: 'Module-Format', value: aos.module_format },
+        { name: 'Memory-Limit', value: formatMemoryLimit(aos.maximum_memory) },
+        { name: 'Compute-Limit', value: aos.compute_limit },
+      ] : []),
       ...deployConfig.spawnTags,
     ]
     logger.debug(`Upload tags: ${JSON.stringify(tags, null, 2)}`)
