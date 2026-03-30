@@ -58,6 +58,8 @@ export async function publishProcess(
       { name: 'Variant', value: 'ao.TN.1' },
       { name: 'Input-Encoding', value: 'JSON-1' },
       { name: 'Output-Encoding', value: 'JSON-1' },
+      { name: 'AOS-Version', value: '2.0.6' },
+      { name: 'Name', value: proc.name },
       ...(aos ? [
         { name: 'Module-Format', value: aos.module_format },
         { name: 'Memory-Limit', value: formatMemoryLimit(aos.maximum_memory) },
