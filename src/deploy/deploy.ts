@@ -132,7 +132,7 @@ export async function deployProcess(
 
   // For single-file processes, Eval the bundled Lua
   if (!hasWasm && !proc.moduleId) {
-    const luaPath = join(proc.outDir, proc.outFile)
+    const luaPath = join(proc.outDir, proc.name, proc.outFile)
     if (!(await fileExists(luaPath))) {
       throw new Error(
         `No build output found for "${proc.name}". Run \`hyperengine build\` first.\n` +

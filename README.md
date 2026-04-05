@@ -175,7 +175,7 @@ Build:
 npx hyperengine build
 ```
 
-This produces a single `dist/process.lua` file with all Lua modules merged and all templates inlined as Lua long strings, ready for AO eval.
+This produces `dist/main/process.lua` — a single Lua file with all modules merged and all templates inlined as Lua long strings, ready for AO eval. Each process is output under its own `dist/<processName>/` directory, which is completely cleared before each build to prevent stale artifacts.
 
 Once your process has been deployed, you'll be able to browse your rendered pages from a HyperBEAM node:
 ```bash
@@ -223,7 +223,7 @@ export default defineConfig({
 })
 ```
 
-Running `hyperengine build` bundles all processes in parallel, producing `dist/process.lua` and `dist/worker.lua`.
+Running `hyperengine build` bundles all processes in parallel, producing `dist/main/process.lua` and `dist/worker/worker.lua`.
 
 ### Dynamic Read Modules
 

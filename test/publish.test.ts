@@ -136,8 +136,8 @@ describe('publishProcess', () => {
 
   it('publishes Lua file when no WASM exists', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- bundled lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- bundled lua')
 
     const result = await publishProcess(proc, deployConfig, wallet)
     expect(result.type).toBe('lua')
@@ -153,8 +153,8 @@ describe('publishProcess', () => {
 
   it('produces verbose output when logger level is verbose', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- bundled lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- bundled lua')
 
     const stderrSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const logger = createLogger({ verbose: true })

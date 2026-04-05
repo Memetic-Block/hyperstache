@@ -89,7 +89,7 @@ export async function publishProcess(
   }
 
   // Fall back to Lua file upload (dynamic read modules)
-  const luaPath = join(proc.outDir, proc.outFile)
+  const luaPath = join(proc.outDir, proc.name, proc.outFile)
   logger.verbose(`Checking for Lua artifact: ${luaPath}`)
   if (!(await fileExists(luaPath))) {
     throw new Error(

@@ -283,7 +283,7 @@ describe('multi-process bundling', () => {
     expect(result.aosModule).toBe(false)
     expect(result.aosCopiedFiles).toEqual([])
 
-    // Should output directly to outDir, not nested under processName/
-    expect(result.outPath).toBe(resolve(fixtureRoot, 'dist', 'reader.lua'))
+    // All builds nest under processName/
+    expect(result.outPath).toBe(resolve(fixtureRoot, 'dist', 'reader', 'reader.lua'))
   })
 })

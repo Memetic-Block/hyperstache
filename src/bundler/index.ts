@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import type { ResolvedConfig, ResolvedProcessConfig } from '../config.js'
 import { resolveModules, extractRequires } from './resolver.js'
@@ -148,8 +148,9 @@ export async function bundleProcess(
     : emitBundle(modules, templatesSource, runtimeSource, process.handlers, autoRequireModules, lustacheModules)
 
   // 6. Determine output paths
-  // When aos is enabled (for processes only), nest under processName subdir
-  const processOutDir = useAos ? resolve(process.outDir, process.name) : process.outDir
+  // Always nest under processName subdir so we can clean stale artifacts
+  const processOutDir = resolve(process.outDir, process.name)
+  await rm(processOutDir, { recursive: true, force: true })
   let outPath: string
   if (useAos) {
     // AOS builds inline the bundle into process.lua via package.preload,
@@ -159,7 +160,7 @@ export async function bundleProcess(
   } else {
     const outFile = process.outFile
     outPath = resolve(processOutDir, outFile)
-    await mkdir(dirname(outPath), { recursive: true })
+    await mkdir(processOutDir, { recursive: true })
     await writeFile(outPath, output, 'utf-8')
   }
 

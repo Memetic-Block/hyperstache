@@ -64,8 +64,8 @@ const wallet = { kty: 'RSA', n: 'test-n', e: 'AQAB' }
 describe('deployProcess', () => {
   it('spawns with standard AOS module and evals bundled Lua', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- bundled lua code')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- bundled lua code')
 
     const result = await deployProcess(proc, deployConfig, wallet, tmp)
 
@@ -88,7 +88,7 @@ describe('deployProcess', () => {
 
   it('spawns with published moduleId from config (no Eval)', async () => {
     const proc = makeProc({ moduleId: 'custom-module-tx-id' })
-    await mkdir(join(tmp, 'dist'), { recursive: true })
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
 
     const result = await deployProcess(proc, deployConfig, wallet, tmp)
 
@@ -139,8 +139,8 @@ describe('deployProcess', () => {
   it('throws when Eval returns an error', async () => {
     mockResult.mockResolvedValueOnce({ Error: 'syntax error near line 1' })
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), 'invalid lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), 'invalid lua')
 
     await expect(deployProcess(proc, deployConfig, wallet, tmp)).rejects.toThrow(
       /Eval failed/,
@@ -149,8 +149,8 @@ describe('deployProcess', () => {
 
   it('includes custom spawnTags and actionTags', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -179,8 +179,8 @@ describe('deployProcess', () => {
   it('passes hyperbeamUrl to connect options', async () => {
     const { connect } = await import('@permaweb/aoconnect')
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -202,8 +202,8 @@ describe('deployProcess', () => {
 
   it('uses explicit authority in spawn tags', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -223,8 +223,8 @@ describe('deployProcess', () => {
 
   it('uses scheduler as authority when authority matches scheduler', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -249,8 +249,8 @@ describe('deployProcess', () => {
     )
 
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -280,8 +280,8 @@ describe('deployProcess', () => {
     )
 
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- lua')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- lua')
 
     const customDeploy: ResolvedDeployConfig = {
       ...deployConfig,
@@ -297,8 +297,8 @@ describe('deployProcess', () => {
 
   it('produces verbose output when logger level is verbose', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- bundled lua code')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- bundled lua code')
 
     const stderrSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const logger = createLogger({ verbose: true })
@@ -316,8 +316,8 @@ describe('deployProcess', () => {
 
   it('produces debug output when logger level is debug', async () => {
     const proc = makeProc()
-    await mkdir(join(tmp, 'dist'), { recursive: true })
-    await writeFile(join(tmp, 'dist', 'process.lua'), '-- bundled lua code')
+    await mkdir(join(tmp, 'dist', 'main'), { recursive: true })
+    await writeFile(join(tmp, 'dist', 'main', 'process.lua'), '-- bundled lua code')
 
     const stderrSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const logger = createLogger({ debug: true })
