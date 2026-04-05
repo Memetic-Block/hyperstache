@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createProject, printNextSteps } from '../src/create.js'
 import type { CreateFlags } from '../src/create.js'
+import { DEFAULT_AOS_COMMIT } from '../src/config.js'
 
 let tmp: string
 
@@ -239,7 +240,7 @@ describe('createProject', () => {
       await createProject('my-app', { module: true }, tmp)
       const config = await readFile(join(tmp, 'my-app/hyperengine.config.ts'), 'utf-8')
       expect(config).toContain('aos: {')
-      expect(config).toContain("commit: 'd5ff8f44df752b13a1e7bce3ded2a5d84b69287f'")
+      expect(config).toContain(`commit: '${DEFAULT_AOS_COMMIT}'`)
     })
 
     it('process.lua includes Handlers.add', async () => {

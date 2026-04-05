@@ -1,4 +1,4 @@
-import { readFile, mkdir, writeFile, stat } from 'node:fs/promises'
+import { readFile, mkdir, readdir, unlink, writeFile, stat } from 'node:fs/promises'
 import { resolve, dirname, join, extname, basename } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { config as dotenvConfig } from 'dotenv'
@@ -211,6 +211,7 @@ export interface ResolvedConfig {
 
 export const DEFAULT_SCHEDULER = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA'
 export const AOS_MODULE_ID = 'ISShJH1ij-hPPt9St5UFFr_8Ys3Kj5cyg7zrMGt7H9s'
+export const DEFAULT_AOS_COMMIT = 'd5ff8f44df752b13a1e7bce3ded2a5d84b69287f'
 
 export interface ResolvedDeployConfig {
   hyperbeamUrl?: string
@@ -443,6 +444,13 @@ async function importConfig(filePath: string, root: string): Promise<Hyperengine
     const outdir = resolve(root, 'node_modules', '.hyperengine')
     const outfile = resolve(outdir, `config-${Date.now()}.mjs`)
     await mkdir(outdir, { recursive: true })
+    // Clean up old temp config files
+    const oldFiles = await readdir(outdir)
+    await Promise.all(
+      oldFiles
+        .filter(f => f.startsWith('config-') && f.endsWith('.mjs'))
+        .map(f => unlink(resolve(outdir, f)).catch(() => {})),
+    )
     await build({
       entryPoints: [filePath],
       outfile,

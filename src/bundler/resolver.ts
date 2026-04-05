@@ -77,6 +77,15 @@ export async function resolveModules(
     resolve(config.root, 'lua_modules/share/lua', config.luarocks.luaVersion),
   ]
 
+  // When adminInterface.dir is outside the entry directory, add its parent
+  // so the "admin" module (admin/init.lua) can be found.
+  if (config.adminInterface?.enabled) {
+    const adminParent = dirname(config.adminInterface.dir)
+    if (!searchPaths.includes(adminParent)) {
+      searchPaths.push(adminParent)
+    }
+  }
+
   const resolved = new Map<string, LuaModule>()
   const unresolved = new Set<string>()
   const visiting = new Set<string>()

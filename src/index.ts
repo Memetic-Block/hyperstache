@@ -1,4 +1,4 @@
-export { defineConfig, loadConfig, resolveConfig, resolveDeployConfig, loadDotenv, DEFAULT_SCHEDULER, AOS_MODULE_ID } from './config.js'
+export { defineConfig, loadConfig, resolveConfig, resolveDeployConfig, loadDotenv, DEFAULT_SCHEDULER, AOS_MODULE_ID, DEFAULT_AOS_COMMIT } from './config.js'
 export type { HyperengineConfig, ResolvedConfig, ResolvedProcessConfig, ViteTemplateOptions, ExternalDep, ProcessConfig, TemplateConfig, LuarocksConfig, AdminInterfaceConfig, AosConfig, DeployConfig, DeployTag, ResolvedDeployConfig } from './config.js'
 
 export { bundle, bundleProcess, renderTemplates, generateRuntimeSource, collectAdminTemplates, ensureAosRepo, copyAosProcessFiles, injectRequire, stripRequires } from './bundler/index.js'

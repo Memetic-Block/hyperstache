@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, stat } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DEFAULT_AOS_COMMIT } from './config.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -120,7 +121,7 @@ function config(flags: CreateFlags): string {
     ? `\n  handlers: true,\n  adminInterface: true,`
     : ''
   const aosBlock = flags.module
-    ? `\n  aos: {\n    commit: 'd5ff8f44df752b13a1e7bce3ded2a5d84b69287f',\n  },`
+    ? `\n  aos: {\n    commit: '${DEFAULT_AOS_COMMIT}',\n  },`
     : ''
   return `import { defineConfig } from '@memetic-block/hyperengine'
 

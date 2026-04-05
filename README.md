@@ -1412,6 +1412,36 @@ luarocks install --local --tree lua_modules my-app-0.1.0-1.rockspec
 
 The bundler then resolves from `lua_modules/` to inline those dependencies into the final bundle.
 
+## Starter Modules
+
+The `modules/` directory contains pre-built starter modules that are published to Arweave as WASM and can be spawned from the hyperengine website. Each module follows the standard hyperengine app structure (`hyperengine.config.ts` + `src/`) and uses the project's own CLI for building.
+
+### Available Modules
+
+| Module | Description |
+|--------|-------------|
+| `modules/core` | Minimal process that requires hyperengine, publishes a simple home page, and registers an Info handler |
+| `modules/admin-ui` | Extends core with the full admin interface (template CRUD, ACL management, route publishing). References the scaffold files in `src/scaffolds/admin/` at build time — no duplication |
+
+### Build & Publish Workflow
+
+```bash
+# 1. Build hyperengine itself
+npm run build
+
+# 2. Bundle modules (produces dist/main/ in each module directory)
+npm run build:modules
+
+# 3. Build WASM in each module's output directory
+cd modules/core/dist/main && ao build && cd -
+cd modules/admin-ui/dist/main && ao build && cd -
+
+# 4. Publish WASM modules to Arweave
+npm run publish:modules
+```
+
+After publishing, each module's transaction ID is written to `modules/<name>/.hyperengine/deploy.json`. The hyperengine website references these module IDs to let users spawn new processes.
+
 ## License
 
 AGPLv3

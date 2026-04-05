@@ -21,6 +21,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "build:modules": "node dist/cli.js build --root modules/core && node dist/cli.js build --root modules/admin-ui",
+    "publish:modules": "node dist/cli.js publish --root modules/core && node dist/cli.js publish --root modules/admin-ui",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
