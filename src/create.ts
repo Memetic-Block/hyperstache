@@ -196,7 +196,8 @@ function tsconfig(): string {
     "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["@memetic-block/hyperengine"]
   },
   "include": ["src"]
 }
