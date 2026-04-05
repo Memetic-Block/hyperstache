@@ -279,6 +279,14 @@ Use `--process` to build only one:
 npx hyperengine build --process main
 ```
 
+### Custom Config File
+
+Use `--config` to specify a config file instead of the auto-detected `hyperengine.config.{ts,js,mjs}`:
+
+```bash
+npx hyperengine build --config path/to/my-config.ts
+```
+
 ## Vite Template Processing
 
 Enable Vite-powered template processing to compile CSS, TypeScript, and other frontend assets directly into your HTML templates before they're bundled into Lua:

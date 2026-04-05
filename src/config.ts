@@ -241,6 +241,8 @@ const CONFIG_FILES = [
   'hyperengine.config.mjs',
 ]
 
+const SUPPORTED_EXTENSIONS = ['.ts', '.js', '.mjs']
+
 async function resolveTemplatesDir(root: string, entryDir: string, configDir?: string): Promise<string> {
   if (configDir) return resolve(root, configDir)
   const templatesSubdir = join(entryDir, 'templates')
@@ -394,8 +396,25 @@ export async function resolveConfig(
   }
 }
 
-export async function loadConfig(root: string): Promise<ResolvedConfig> {
+export async function loadConfig(root: string, configPath?: string): Promise<ResolvedConfig> {
   loadDotenv(root)
+
+  if (configPath) {
+    const filePath = resolve(root, configPath)
+    const ext = extname(filePath)
+    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+      throw new Error(
+        `Unsupported config file extension "${ext}". Use one of: ${SUPPORTED_EXTENSIONS.join(', ')}`,
+      )
+    }
+    try {
+      await readFile(filePath)
+    } catch {
+      throw new Error(`Config file not found: ${filePath}`)
+    }
+    const config = await importConfig(filePath, root)
+    return await resolveConfig(config, root)
+  }
 
   for (const name of CONFIG_FILES) {
     const filePath = resolve(root, name)
@@ -405,50 +424,55 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
       continue
     }
 
-    const ext = extname(name)
-    let config: HyperengineConfig
-
-    if (ext === '.ts') {
-      // Bundle the TS config to a temp ESM file with esbuild, then import it
-      const { build } = await import('esbuild')
-      const outdir = resolve(root, 'node_modules', '.hyperengine')
-      const outfile = resolve(outdir, `config-${Date.now()}.mjs`)
-      await mkdir(outdir, { recursive: true })
-      await build({
-        entryPoints: [filePath],
-        outfile,
-        format: 'esm',
-        platform: 'node',
-        bundle: true,
-        write: true,
-        packages: 'external',
-        plugins: [{
-          name: 'hyperengine-config-shim',
-          setup(b) {
-            b.onResolve({ filter: /^@memetic-block\/hyperengine$/ }, () => ({
-              path: '@memetic-block/hyperengine',
-              namespace: 'hyperengine-shim',
-            }))
-            b.onLoad({ filter: /.*/, namespace: 'hyperengine-shim' }, () => ({
-              contents: 'export function defineConfig(config) { return config }',
-              loader: 'js',
-            }))
-          },
-        }],
-      })
-      const mod = await import(pathToFileURL(outfile).href)
-      config = mod.default ?? mod
-    } else {
-      const mod = await import(pathToFileURL(filePath).href)
-      config = mod.default ?? mod
-    }
-
+    const config = await importConfig(filePath, root)
     return await resolveConfig(config, root)
   }
 
   throw new Error(
     `No config file found. Create one of: ${CONFIG_FILES.join(', ')}`,
   )
+}
+
+async function importConfig(filePath: string, root: string): Promise<HyperengineConfig> {
+  const ext = extname(filePath)
+  let config: HyperengineConfig
+
+  if (ext === '.ts') {
+    // Bundle the TS config to a temp ESM file with esbuild, then import it
+    const { build } = await import('esbuild')
+    const outdir = resolve(root, 'node_modules', '.hyperengine')
+    const outfile = resolve(outdir, `config-${Date.now()}.mjs`)
+    await mkdir(outdir, { recursive: true })
+    await build({
+      entryPoints: [filePath],
+      outfile,
+      format: 'esm',
+      platform: 'node',
+      bundle: true,
+      write: true,
+      packages: 'external',
+      plugins: [{
+        name: 'hyperengine-config-shim',
+        setup(b) {
+          b.onResolve({ filter: /^@memetic-block\/hyperengine$/ }, () => ({
+            path: '@memetic-block/hyperengine',
+            namespace: 'hyperengine-shim',
+          }))
+          b.onLoad({ filter: /.*/, namespace: 'hyperengine-shim' }, () => ({
+            contents: 'export function defineConfig(config) { return config }',
+            loader: 'js',
+          }))
+        },
+      }],
+    })
+    const mod = await import(pathToFileURL(outfile).href)
+    config = mod.default ?? mod
+  } else {
+    const mod = await import(pathToFileURL(filePath).href)
+    config = mod.default ?? mod
+  }
+
+  return config
 }
 
 export function defineConfig(config: HyperengineConfig): HyperengineConfig {

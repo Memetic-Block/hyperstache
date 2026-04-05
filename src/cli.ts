@@ -25,10 +25,11 @@ program
   .command('build')
   .description('Bundle AO Lua processes')
   .option('-r, --root <dir>', 'Project root directory', '.')
+  .option('-c, --config <path>', 'Path to config file (default: auto-detect)')
   .option('-p, --process <name>', 'Bundle only the named process')
   .action(async (opts) => {
     const root = resolve(opts.root)
-    const config = await loadConfig(root)
+    const config = await loadConfig(root, opts.config)
 
     if (opts.process) {
       const proc = config.processes.find(p => p.name === opts.process)
